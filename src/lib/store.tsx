@@ -47,6 +47,20 @@ interface Store {
 
 const StoreContext = createContext<Store | null>(null);
 
+function withoutUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => withoutUndefined(item)) as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, item]) => item !== undefined)
+        .map(([key, item]) => [key, withoutUndefined(item)]),
+    ) as T;
+  }
+  return value;
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const [projects, setProjects] = useState<Project[]>(seedProjects);
@@ -156,20 +170,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addProject = useCallback(
     (p: Project) =>
       runWrite((firestore) =>
-        setDoc(doc(firestore, "projects", p.id), {
-          ...p,
-          updatedAt: new Date().toISOString(),
-        }),
+        setDoc(
+          doc(firestore, "projects", p.id),
+          withoutUndefined({
+            ...p,
+            updatedAt: new Date().toISOString(),
+          }),
+        ),
       ),
     [runWrite],
   );
   const updateProject = useCallback(
     (p: Project) =>
       runWrite((firestore) =>
-        setDoc(doc(firestore, "projects", p.id), {
-          ...p,
-          updatedAt: new Date().toISOString(),
-        }),
+        setDoc(
+          doc(firestore, "projects", p.id),
+          withoutUndefined({
+            ...p,
+            updatedAt: new Date().toISOString(),
+          }),
+        ),
       ),
     [runWrite],
   );

@@ -3,8 +3,8 @@ import "../index.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "App Downloads",
-  description: "Manage app download pages.",
+  title: "App Centers",
+  description: "Manage App Center pages.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

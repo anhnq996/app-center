@@ -66,11 +66,13 @@ export function newProject(ownerId = CURRENT_USER_ID): Project {
     companyLogoHeight: 28,
     showCompanyLogo: true,
     showCompanyName: true,
+    showPlatformIconBackground: true,
     updatedAt: new Date().toISOString(),
     appearance: defaultAppearance(),
     platforms: [androidPlatform(), iosPlatform()],
     ownerId,
     memberIds: [ownerId],
+    memberRoles: {},
   };
 }
 

@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "../lib/auth";
 import {
-  LayoutGrid,
-  Users,
-  UserCircle,
-  LogOut,
   Boxes,
+  LayoutGrid,
+  LogOut,
   Menu,
+  UserCircle,
+  Users,
   X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAuth } from "../lib/auth";
 
 const nav = [
   { to: "/admin/projects", label: "Projects", icon: LayoutGrid },
@@ -35,7 +35,7 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
           <Boxes className="size-5" />
         </div>
         <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-          App Downloads
+          App Centers
         </span>
       </Link>
 
@@ -106,7 +106,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Boxes className="size-[18px]" />
           </div>
           <span className="font-display text-sm font-extrabold text-ink">
-            App Downloads
+            App Centers
           </span>
         </div>
         <button

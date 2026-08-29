@@ -7,6 +7,7 @@
 5. In Google Cloud Console → **IAM & Admin → Service Accounts**, generate a private JSON key. Store it outside the repository and set `GOOGLE_APPLICATION_CREDENTIALS` in `.env.local` to its absolute path.
 6. Set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and optionally `ADMIN_NAME` in `.env.local`, then run `npm run seed:admin`. This creates the first Firebase Authentication user and `users/{UID}` document with role `owner`.
 7. Restart `npm run dev` after changing environment variables.
+8. Uploaded APK, IPA, plist, and custom files are stored by the Next.js server under `public/download/{project-slug}/`. The deployed server must use a persistent, writable filesystem for uploads to survive restarts.
 
 The app stores workspace users in the `users` collection and download pages in the `projects` collection. Both collections are observed in real time. If a newly connected Firestore database has no data, the app creates the existing demo data once using stable document IDs.
 

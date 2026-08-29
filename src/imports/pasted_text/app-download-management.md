@@ -1,4 +1,4 @@
-Create a complete responsive React frontend for an App Download Management website.
+Create a complete responsive React frontend for an App Center Management website.
 
 This is FRONTEND ONLY.
 
@@ -9,7 +9,7 @@ Use mock data and local React state only.
 The application has 2 main areas:
 
 1. Admin UI
-2. Public App Download Page
+2. Public App Center Page
 
 The design should be modern, clean, minimal, premium, and simple to use.
 
@@ -46,7 +46,7 @@ Content:
 
 * Small product/company logo
 * Title: "Admin Login"
-* Subtitle: "Sign in to manage your app download pages"
+* Subtitle: "Sign in to manage your App Center pages"
 
 Fields:
 
@@ -87,7 +87,7 @@ Sidebar items:
 Brand area at top:
 
 * Small logo
-* Text: "App Downloads"
+* Text: "App Centers"
 
 Use a clean minimal admin style.
 
@@ -115,7 +115,7 @@ Title:
 Projects
 
 Subtitle:
-Manage your app download pages.
+Manage your App Center pages.
 
 Right side button:
 

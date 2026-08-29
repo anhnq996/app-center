@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import type { Platform, Project } from "./types";
+import { platformHref, shouldDownloadFile } from "./platformLinks";
 
 const directions = {
   ttb: "to bottom",
@@ -28,7 +29,7 @@ function safeColor(value: string, fallback: string) {
 
 function safeUrl(value: string) {
   const url = value.trim();
-  return /^(https?:|data:|blob:|\/|\.\/|\.\.\/)/i.test(url) ? escapeHtml(url) : "#";
+  return /^(https?:|itms-services:|data:|blob:|\/|\.\/|\.\.\/)/i.test(url) ? escapeHtml(url) : "#";
 }
 
 function safeFileName(value: string, fallback: string) {
@@ -100,8 +101,10 @@ function platformMarkup(platform: Platform, icon: string | null) {
     platform.label.replace(new RegExp(`\\s*${platform.name}$`, "i"), "").trim() ||
     "Tải xuống cho";
   const label = rawLabel.toLowerCase() === "download for" ? "Tải xuống cho" : rawLabel;
+  const href = platformHref(platform);
+  const download = shouldDownloadFile(platform);
   return `
-    <a class="download-button" data-platform="${escapeHtml(platform.kind)}" href="${safeUrl(platform.url)}"${platform.url ? ' target="_blank" rel="noreferrer"' : ' data-empty-link="true"'}>
+    <a class="download-button" data-platform="${escapeHtml(platform.kind)}" href="${safeUrl(href)}"${href ? ' target="_blank" rel="noreferrer"' : ' data-empty-link="true"'}${download ? ` download="${escapeHtml(platform.fileName || "")}"` : ""}>
       <span class="platform-icon">${
         icon
           ? `<img src="${icon}" alt="${escapeHtml(platform.name)} logo">`
@@ -118,7 +121,7 @@ function platformMarkup(platform: Platform, icon: string | null) {
     </a>`;
 }
 
-export async function downloadProjectHtml(project: Project) {
+export async function buildProjectArchive(project: Project) {
   const zip = new JSZip();
   const folderName = safeFileName(project.name, project.slug || "project");
   const root = zip.folder(folderName);
@@ -160,6 +163,9 @@ export async function downloadProjectHtml(project: Project) {
   const buttonBackground = light ? "rgba(255,255,255,.1)" : "rgba(15,23,41,.04)";
   const buttonHover = light ? "rgba(255,255,255,.16)" : "rgba(15,23,41,.08)";
   const buttonBorder = light ? "rgba(255,255,255,.15)" : "rgba(15,23,41,.1)";
+  const showIconBackground = project.showPlatformIconBackground ?? true;
+  const iconBackground = showIconBackground ? (light ? "#fff" : "#0f1729") : "transparent";
+  const iconRadius = showIconBackground ? "16px" : "0";
   const pageBackground =
     appearance.backgroundType === "solid"
       ? safeColor(appearance.solidColor, "#0f172a")
@@ -188,7 +194,7 @@ body{min-height:100vh;background:${pageBackground};color:${strong}}
 main{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 16px}.card{width:100%;max-width:440px;padding:32px;border:1px solid ${cardBorder};border-radius:${radii[appearance.cardRadius]}px;background:${cardBackground};${appearance.cardStyle === "glass" ? "backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);" : ""}${appearance.cardStyle !== "transparent" ? "box-shadow:0 30px 80px -30px rgba(0,0,0,.6);" : ""}}
 .company{margin-bottom:24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}.company-logo{display:flex;align-items:center;justify-content:center;overflow:hidden;max-width:100%;width:${project.companyLogoWidth ?? 112}px;height:${project.companyLogoHeight ?? 28}px}.company-logo img,.project-logo img{display:block;max-width:100%;max-height:100%;object-fit:contain}.company-name{color:${muted};font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
 .project{text-align:center;display:flex;flex-direction:column;align-items:center}.project-logo{display:grid;place-items:center;width:${project.projectLogoWidth ?? 152}px;height:${project.projectLogoHeight ?? 96}px;max-width:100%}.fallback-logo{width:100%;height:100%;display:grid;place-items:center;border-radius:24px;background:linear-gradient(135deg,#6366f1,#6d28d9);font-size:26px;font-weight:800;color:#fff}.project h1{margin:20px 0 0;font-size:26px;line-height:1.15;letter-spacing:-.025em}.project p{margin:6px 0 0;color:${muted};font-size:14px}
-.buttons{display:flex;flex-direction:column;gap:10px;margin-top:28px}.download-button{position:relative;min-height:68px;display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid ${buttonBorder};border-radius:18px;background:${buttonBackground};color:${strong};text-decoration:none;transition:.2s ease}.download-button:hover{transform:translateY(-2px);background:${buttonHover};box-shadow:0 16px 40px -16px rgba(15,23,41,.35)}.platform-icon{width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;border-radius:16px;background:${light ? "#fff" : "#0f1729"}}.platform-icon img{width:25px;height:25px;object-fit:contain}.generic-icon{font-size:23px;color:${light ? "#0f1729" : "#fff"}}.button-copy{min-width:0;display:flex;flex-direction:column;text-align:left}.button-label{color:${muted};font-size:11px;font-weight:600;letter-spacing:.03em}.button-copy strong{font-size:15px;line-height:1.2}.button-version,.button-subtitle{color:${muted};font-size:11px;line-height:1.35}.button-subtitle{white-space:normal}.recommended{position:absolute;right:10px;top:8px;border-radius:999px;padding:3px 8px;background:${light ? "#fff" : "#4f46e5"};color:${light ? "#0f1729" : "#fff"};font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.download-icon{width:17px;height:17px;flex:0 0 auto;margin-left:auto;opacity:.48;transition:.2s ease}.download-button:hover .download-icon{transform:translateY(2px);opacity:.85}.empty,.security{text-align:center;color:${muted};font-size:11px}.empty{padding:16px 0;font-size:14px}.security{margin:24px 0 0}
+.buttons{display:flex;flex-direction:column;gap:10px;margin-top:28px}.download-button{position:relative;min-height:68px;display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid ${buttonBorder};border-radius:18px;background:${buttonBackground};color:${strong};text-decoration:none;transition:.2s ease}.download-button:hover{transform:translateY(-2px);background:${buttonHover};box-shadow:0 16px 40px -16px rgba(15,23,41,.35)}.platform-icon{width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;border-radius:${iconRadius};background:${iconBackground}}.platform-icon img{width:25px;height:25px;object-fit:contain}.generic-icon{font-size:23px;color:${showIconBackground ? (light ? "#0f1729" : "#fff") : strong}}.button-copy{min-width:0;display:flex;flex-direction:column;text-align:left}.button-label{color:${muted};font-size:11px;font-weight:600;letter-spacing:.03em}.button-copy strong{font-size:15px;line-height:1.2}.button-version,.button-subtitle{color:${muted};font-size:11px;line-height:1.35}.button-subtitle{white-space:normal}.recommended{position:absolute;right:10px;top:8px;border-radius:999px;padding:3px 8px;background:${light ? "#fff" : "#4f46e5"};color:${light ? "#0f1729" : "#fff"};font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.download-icon{width:17px;height:17px;flex:0 0 auto;margin-left:auto;opacity:.48;transition:.2s ease}.download-button:hover .download-icon{transform:translateY(2px);opacity:.85}.empty,.security{text-align:center;color:${muted};font-size:11px}.empty{padding:16px 0;font-size:14px}.security{margin:24px 0 0}
 @media(max-width:480px){main{padding:28px 12px}.card{padding:22px}.project h1{font-size:24px}.recommended{display:none}}
 `.trim();
 
@@ -211,7 +217,7 @@ if(platform){
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Download ${escapeHtml(project.name || "application")}">
-  <title>${escapeHtml(project.name || "App Download")}</title>
+  <title>${escapeHtml(project.name || "App Center")}</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="js/app.js" defer></script>
 </head>
@@ -236,6 +242,11 @@ if(platform){
   root.file("js/app.js", javascript);
 
   const archive = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+  return { archive, folderName };
+}
+
+export async function downloadProjectHtml(project: Project) {
+  const { archive, folderName } = await buildProjectArchive(project);
   const url = URL.createObjectURL(archive);
   const anchor = document.createElement("a");
   anchor.href = url;

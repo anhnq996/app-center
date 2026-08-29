@@ -8,6 +8,9 @@ export function versionChanged(prev: Platform, next: Platform): boolean {
   return (
     prev.version !== next.version ||
     prev.url !== next.url ||
+    prev.linkBehavior !== next.linkBehavior ||
+    prev.iosOta !== next.iosOta ||
+    prev.ipaUrl !== next.ipaUrl ||
     prev.fileName !== next.fileName
   );
 }
@@ -17,9 +20,13 @@ export function snapshotOf(p: Platform): PlatformVersion {
     id: uid("ver"),
     version: p.version || "—",
     source: p.source,
+    linkBehavior: p.linkBehavior,
+    iosOta: p.iosOta,
     url: p.url,
     fileName: p.fileName,
     fileSize: p.fileSize,
+    ipaUrl: p.ipaUrl,
+    manifestFileName: p.manifestFileName,
     label: p.label,
     subtitle: p.subtitle,
     savedAt: new Date().toISOString(),

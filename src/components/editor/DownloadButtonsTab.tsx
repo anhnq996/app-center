@@ -53,6 +53,18 @@ export function DownloadButtonsTab({
       title="Download Buttons"
       desc="Manage the platforms available on your public download page."
     >
+      <div className="mb-5 flex items-center justify-between rounded-xl border border-line bg-bg px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-ink">Show icon background</p>
+          <p className="text-xs text-ink-faint">
+            Display the colored frame behind each platform icon.
+          </p>
+        </div>
+        <Toggle
+          checked={draft.showPlatformIconBackground ?? true}
+          onChange={(value) => patch({ showPlatformIconBackground: value })}
+        />
+      </div>
       <div className="flex flex-col gap-2.5">
         {platforms.map((p) => (
           <div
@@ -85,7 +97,13 @@ export function DownloadButtonsTab({
             >
               <GripVertical className="size-5" />
             </button>
-            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-ink text-white">
+            <div
+              className={`grid size-11 shrink-0 place-items-center ${
+                draft.showPlatformIconBackground ?? true
+                  ? "rounded-xl bg-ink text-white"
+                  : "bg-transparent text-ink"
+              }`}
+            >
               <PlatformGlyph platform={p} className="size-6" />
             </div>
             <div className="min-w-0 flex-1">
@@ -141,6 +159,7 @@ export function DownloadButtonsTab({
         open={!!editing}
         mode="edit"
         platform={editing}
+        projectSlug={draft.slug}
         onClose={() => setEditing(null)}
         onSave={savePlatform}
       />
@@ -148,6 +167,7 @@ export function DownloadButtonsTab({
         open={adding}
         mode="add"
         platform={null}
+        projectSlug={draft.slug}
         onClose={() => setAdding(false)}
         onSave={savePlatform}
       />

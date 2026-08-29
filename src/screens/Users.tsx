@@ -60,8 +60,17 @@ function AddUserModal({
       toast("User added");
       reset();
       onClose();
-    } catch {
-      toast("Unable to create the user. Passwords must have at least 6 characters.");
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      if (code === "auth/weak-password") {
+        toast("Password must have at least 6 characters");
+      } else if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        toast("This email still exists in Firebase Authentication. Enter its previous password to restore the user");
+      } else if (code === "auth/invalid-email") {
+        toast("Enter a valid email address");
+      } else {
+        toast("Unable to create or restore the user");
+      }
     }
   };
 

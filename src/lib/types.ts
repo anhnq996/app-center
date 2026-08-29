@@ -1,13 +1,18 @@
 export type PlatformKind = "android" | "ios" | "custom";
 export type DownloadSource = "file" | "link";
+export type LinkBehavior = "store" | "download" | "ios-manifest";
 
 export interface PlatformVersion {
   id: string;
   version: string;
   source: DownloadSource;
+  linkBehavior?: LinkBehavior;
+  iosOta?: boolean;
   url: string;
   fileName: string | null;
   fileSize: string | null;
+  ipaUrl?: string | null;
+  manifestFileName?: string | null;
   label: string;
   subtitle: string;
   savedAt: string;
@@ -19,9 +24,13 @@ export interface Platform {
   name: string;
   logo: string | null; // data URL for custom logos
   source: DownloadSource;
+  linkBehavior?: LinkBehavior;
+  iosOta?: boolean;
   url: string;
   fileName: string | null;
   fileSize: string | null;
+  ipaUrl?: string | null;
+  manifestFileName?: string | null;
   label: string;
   subtitle: string;
   version: string;
@@ -73,9 +82,11 @@ export interface Project {
   companyLogoHeight?: number;
   showCompanyLogo?: boolean;
   showCompanyName: boolean;
+  showPlatformIconBackground?: boolean;
   updatedAt: string;
   appearance: Appearance;
   platforms: Platform[];
   ownerId: string;
   memberIds: string[];
+  memberRoles?: Record<string, "editor" | "viewer">;
 }

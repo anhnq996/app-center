@@ -9,6 +9,7 @@ import { newProject } from "../lib/data";
 import type { Project } from "../lib/types";
 import { backgroundStyle } from "../lib/appearance";
 import { downloadProjectHtml } from "../lib/exportProjectHtml";
+import { publishProjectStatic } from "../lib/publishProject";
 import { Button, useToast } from "../components/ui";
 import { GeneralTab } from "../components/editor/GeneralTab";
 import { AppearanceTab } from "../components/editor/AppearanceTab";
@@ -62,7 +63,7 @@ export default function ProjectEditor() {
   const id = useParams<{ id: string }>()?.id;
   const router = useRouter();
   const toast = useToast();
-  const { getProject, addProject, updateProject, currentUser } = useStore();
+  const { projects, getProject, addProject, updateProject, currentUser } = useStore();
 
   const isNew = id === "new" || !id;
   const existing = isNew ? undefined : getProject(id!);
@@ -76,33 +77,50 @@ export default function ProjectEditor() {
 
   const patch = (p: Partial<Project>) => setDraft((d) => ({ ...d, ...p }));
 
-  const canSave = useMemo(
-    () => draft.name.trim() && draft.slug.trim(),
-    [draft.name, draft.slug],
+  const normalizedSlug = draft.slug.replace(/-+$/g, "");
+  const slugTaken = useMemo(
+    () => projects.some(
+      (project) => project.id !== draft.id && project.slug.toLowerCase() === normalizedSlug.toLowerCase(),
+    ),
+    [projects, draft.id, normalizedSlug],
+  );
+  const canSave = Boolean(
+    draft.name.trim() &&
+      normalizedSlug &&
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug) &&
+      !["admin", "api", "download", "assets", "_next"].includes(normalizedSlug) &&
+      !slugTaken,
   );
 
-  const save = async () => {
+  const persistProject = async () => {
     if (!canSave) {
-      toast("Add a project name and slug first");
-      return;
+      if (slugTaken) throw new Error("This slug is already used by another project");
+      throw new Error("Add a project name and a valid slug first");
     }
+    const projectToSave = { ...draft, slug: normalizedSlug };
+    await publishProjectStatic(projectToSave, existing?.slug);
+    if (isNew && !getProject(projectToSave.id)) await addProject(projectToSave);
+    else await updateProject(projectToSave);
+    setDraft(projectToSave);
+    return projectToSave;
+  };
+
+  const save = async () => {
     try {
-      if (isNew && !getProject(draft.id)) await addProject(draft);
-      else await updateProject(draft);
-      toast("Changes saved");
-      if (isNew) router.push(`/admin/projects/${draft.id}`);
-    } catch {
-      toast("Unable to save changes to Firestore");
+      const saved = await persistProject();
+      toast("Changes saved and static page published");
+      if (isNew) router.push(`/admin/projects/${saved.id}`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to save and publish project");
     }
   };
 
   const preview = async () => {
     try {
-      if (isNew && !getProject(draft.id)) await addProject(draft);
-      else await updateProject(draft);
-      window.open(`/download/${draft.slug}`, "_blank");
-    } catch {
-      toast("Unable to save changes to Firestore");
+      const saved = await persistProject();
+      window.open(`/${saved.slug}`, "_blank");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Unable to publish preview");
     }
   };
 
@@ -170,7 +188,9 @@ export default function ProjectEditor() {
         {/* Split layout */}
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div>
-            {tab === "general" && <GeneralTab draft={draft} patch={patch} />}
+            {tab === "general" && (
+              <GeneralTab draft={draft} patch={patch} slugTaken={slugTaken} />
+            )}
             {tab === "appearance" && <AppearanceTab draft={draft} patch={patch} />}
             {tab === "buttons" && <DownloadButtonsTab draft={draft} patch={patch} />}
             {tab === "members" && <MembersTab draft={draft} patch={patch} />}

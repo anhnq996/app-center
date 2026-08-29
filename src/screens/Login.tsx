@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ArrowRight, Boxes, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Boxes, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button, Field, Input } from "../components/ui";
 import { useAuth } from "../lib/auth";
 
@@ -42,7 +42,7 @@ export default function Login() {
               Admin Login
             </h1>
             <p className="mt-1.5 text-sm text-ink-soft">
-              Sign in to manage your app download pages
+              Sign in to manage your App Center pages
             </p>
           </div>
 

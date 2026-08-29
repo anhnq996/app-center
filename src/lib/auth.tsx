@@ -102,7 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       initializeApp(firebaseConfig, "workspace-user-provisioning");
     const secondaryAuth = getAuth(secondaryApp);
     try {
-      const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      let credential;
+      try {
+        credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      } catch (error) {
+        if ((error as { code?: string }).code !== "auth/email-already-in-use") throw error;
+        credential = await signInWithEmailAndPassword(secondaryAuth, email, password);
+      }
       await updateProfile(credential.user, { displayName });
       return credential.user.uid;
     } finally {

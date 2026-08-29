@@ -1,5 +1,10 @@
-import PublicDownloadPage from "../../../screens/PublicDownloadPage";
+import { redirect } from "next/navigation";
 
-export default function DownloadPage() {
-  return <PublicDownloadPage />;
+export default async function DownloadPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  redirect(`/${slug}`);
 }

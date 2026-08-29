@@ -1,6 +1,7 @@
 import { Download } from "lucide-react";
 import type { Project, Platform } from "../lib/types";
 import { cardRadiusPx, isLightText } from "../lib/appearance";
+import { platformHref, shouldDownloadFile } from "../lib/platformLinks";
 import { PlatformGlyph } from "./PlatformGlyph";
 
 function initials(name: string) {
@@ -20,11 +21,13 @@ function DownloadButton({
   light,
   recommended,
   compact,
+  showIconBackground,
 }: {
   platform: Platform;
   light: boolean;
   recommended?: boolean;
   compact?: boolean;
+  showIconBackground: boolean;
 }) {
   const rawLabel =
     platform.label.replace(new RegExp(`\\s*${platform.name}$`, "i"), "").trim() ||
@@ -34,13 +37,15 @@ function DownloadButton({
     `version ${platform.version}`,
     `phiên bản ${platform.version}`,
   ].includes(platform.subtitle.trim().toLowerCase());
+  const href = platformHref(platform);
 
   return (
     <a
-      href={platform.url || "#"}
+      href={href || "#"}
       target="_blank"
       rel="noreferrer"
-      onClick={(e) => !platform.url && e.preventDefault()}
+      download={shouldDownloadFile(platform) ? platform.fileName || true : undefined}
+      onClick={(e) => !href && e.preventDefault()}
       className={`group relative flex items-center gap-3.5 rounded-[18px] border px-4 transition-all duration-200 hover:-translate-y-0.5 ${
         compact ? "py-3" : "py-3.5"
       } ${
@@ -51,8 +56,12 @@ function DownloadButton({
       style={{ minHeight: compact ? 60 : 68 }}
     >
       <span
-        className={`grid size-11 shrink-0 place-items-center rounded-2xl ${
-          light ? "bg-white text-ink" : "bg-ink text-white"
+        className={`grid size-11 shrink-0 place-items-center ${
+          showIconBackground
+            ? `rounded-2xl ${light ? "bg-white text-ink" : "bg-ink text-white"}`
+            : light
+              ? "bg-transparent text-white"
+              : "bg-transparent text-ink"
         }`}
       >
         <PlatformGlyph platform={platform} className="size-6" />
@@ -214,6 +223,7 @@ export function DownloadCard({
             platform={p}
             light={light}
             compact={compact}
+            showIconBackground={project.showPlatformIconBackground ?? true}
             recommended={detected != null && p.kind === detected}
           />
         ))}

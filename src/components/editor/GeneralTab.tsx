@@ -7,9 +7,9 @@ import { Card } from "./parts";
 function slugify(s: string) {
   return s
     .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/g, "");
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -19,9 +19,11 @@ function clamp(value: number, min: number, max: number) {
 export function GeneralTab({
   draft,
   patch,
+  slugTaken = false,
 }: {
   draft: Project;
   patch: (p: Partial<Project>) => void;
+  slugTaken?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-5">
@@ -45,16 +47,20 @@ export function GeneralTab({
           </div>
           <Field
             label="Public Slug"
-            hint={
+            hint={slugTaken ? (
+              <span className="font-semibold text-danger">This slug is already used by another project.</span>
+            ) : (
               <>
-                Public page: <span className="font-mono text-ink-soft">/download/{draft.slug || "your-slug"}</span>
+                Public page: <span className="font-mono text-ink-soft">/{draft.slug || "your-slug"}</span>
               </>
-            }
+            )}
           >
             <Input
               value={draft.slug}
               onChange={(e) => patch({ slug: slugify(e.target.value) })}
+              onBlur={() => patch({ slug: draft.slug.replace(/-+$/g, "") })}
               placeholder="gosang-mobile"
+              className={slugTaken ? "border-danger focus:border-danger focus:ring-danger/10" : ""}
             />
           </Field>
           <Field label="Status">

@@ -1,19 +1,20 @@
 import { useMemo, useState } from "react";
-import { UserPlus, X, Crown, Check } from "lucide-react";
+import { Crown, UserPlus, X } from "lucide-react";
 import type { Project } from "../../lib/types";
 import { useStore } from "../../lib/store";
 import {
   Button,
   Field,
-  Input,
   Modal,
   ModalHeader,
   Segmented,
+  inputClass,
   useToast,
 } from "../ui";
 import { Avatar, RoleBadge } from "../UserBits";
 import { Card } from "./parts";
-import type { UserRole } from "../../lib/types";
+
+type MemberRole = "editor" | "viewer";
 
 export function MembersTab({
   draft,
@@ -22,52 +23,58 @@ export function MembersTab({
   draft: Project;
   patch: (p: Partial<Project>) => void;
 }) {
-  const { users, addUser, currentUser } = useStore();
+  const { users, currentUser } = useStore();
   const toast = useToast();
   const [picking, setPicking] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<UserRole>("editor");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedRole, setSelectedRole] = useState<MemberRole>("editor");
 
   const members = useMemo(
-    () => draft.memberIds.map((id) => users.find((u) => u.id === id)).filter(Boolean),
+    () => draft.memberIds.map((id) => users.find((user) => user.id === id)).filter(Boolean),
     [draft.memberIds, users],
   );
   const available = useMemo(
-    () => users.filter((u) => !draft.memberIds.includes(u.id)),
+    () => users.filter((user) => !draft.memberIds.includes(user.id)),
     [users, draft.memberIds],
   );
-
+  const selectedUser = users.find((user) => user.id === selectedUserId);
   const isOwner = draft.ownerId === currentUser.id;
 
-  const addMember = (id: string) =>
-    patch({ memberIds: [...draft.memberIds, id] });
-  const removeMember = (id: string) =>
-    patch({ memberIds: draft.memberIds.filter((m) => m !== id) });
-
-  const invite = async () => {
-    if (!inviteName.trim() || !inviteEmail.trim()) return;
-    const existing = users.find(
-      (u) => u.email.toLowerCase() === inviteEmail.trim().toLowerCase(),
-    );
-    try {
-      const user =
-        existing ??
-        (await addUser({
-          name: inviteName.trim(),
-          email: inviteEmail.trim(),
-          role: inviteRole,
-          avatar: null,
-        }));
-      if (!draft.memberIds.includes(user.id)) addMember(user.id);
-      toast(existing ? "Member added" : "Invitation sent");
-      setInviteName("");
-      setInviteEmail("");
-      setPicking(false);
-    } catch {
-      toast("Unable to add user to Firestore");
-    }
+  const chooseUser = (userId: string) => {
+    setSelectedUserId(userId);
+    const user = users.find((item) => item.id === userId);
+    setSelectedRole(user?.role === "viewer" ? "viewer" : "editor");
   };
+
+  const openPicker = () => {
+    const first = available[0];
+    chooseUser(first?.id ?? "");
+    setPicking(true);
+  };
+
+  const addMember = () => {
+    if (!selectedUser || draft.memberIds.includes(selectedUser.id)) return;
+    const role: MemberRole = selectedUser.role === "viewer" ? "viewer" : selectedRole;
+    patch({
+      memberIds: [...draft.memberIds, selectedUser.id],
+      memberRoles: { ...draft.memberRoles, [selectedUser.id]: role },
+    });
+    toast("Member added");
+    setPicking(false);
+    setSelectedUserId("");
+  };
+
+  const removeMember = (userId: string) => {
+    const memberRoles = { ...draft.memberRoles };
+    delete memberRoles[userId];
+    patch({
+      memberIds: draft.memberIds.filter((memberId) => memberId !== userId),
+      memberRoles,
+    });
+  };
+
+  const memberRole = (userId: string, workspaceRole: string): MemberRole =>
+    draft.memberRoles?.[userId] ?? (workspaceRole === "viewer" ? "viewer" : "editor");
 
   return (
     <Card
@@ -82,32 +89,34 @@ export function MembersTab({
 
       <div className="flex flex-col gap-2.5">
         {members.map(
-          (m) =>
-            m && (
+          (member) =>
+            member && (
               <div
-                key={m.id}
+                key={member.id}
                 className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
               >
-                <Avatar user={m} />
+                <Avatar user={member} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="font-display truncate text-sm font-bold text-ink">
-                      {m.name}
+                      {member.name}
                     </p>
-                    {m.id === draft.ownerId && (
+                    {member.id === draft.ownerId && (
                       <Crown className="size-3.5 text-amber-500" />
                     )}
                   </div>
-                  <p className="truncate text-xs text-ink-soft">{m.email}</p>
+                  <p className="truncate text-xs text-ink-soft">{member.email}</p>
                 </div>
-                {m.id === draft.ownerId ? (
-                  <RoleBadge role="owner" />
-                ) : (
-                  <RoleBadge role={m.role} />
-                )}
-                {isOwner && m.id !== draft.ownerId && (
+                <RoleBadge
+                  role={
+                    member.id === draft.ownerId
+                      ? "owner"
+                      : memberRole(member.id, member.role)
+                  }
+                />
+                {isOwner && member.id !== draft.ownerId && (
                   <button
-                    onClick={() => removeMember(m.id)}
+                    onClick={() => removeMember(member.id)}
                     className="grid size-9 place-items-center rounded-lg border border-line text-ink-faint transition hover:bg-danger/10 hover:text-danger"
                     aria-label="Remove member"
                   >
@@ -123,7 +132,7 @@ export function MembersTab({
         <Button
           variant="secondary"
           className="mt-4 w-full border-dashed"
-          onClick={() => setPicking(true)}
+          onClick={openPicker}
         >
           <UserPlus className="size-4" />
           Add Member
@@ -133,74 +142,71 @@ export function MembersTab({
       <Modal open={picking} onClose={() => setPicking(false)}>
         <ModalHeader
           title="Add Member"
-          subtitle="Add an existing user or invite someone new."
+          subtitle="Select a user from your workspace."
           onClose={() => setPicking(false)}
         />
         <div className="flex flex-col gap-5 p-6">
-          {available.length > 0 && (
-            <div>
-              <p className="mb-2 text-sm font-semibold text-ink">Workspace users</p>
-              <div className="flex flex-col gap-2">
-                {available.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      addMember(u.id);
-                      toast("Member added");
-                    }}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-2.5 text-left transition hover:border-brand hover:bg-brand-soft/40"
-                  >
-                    <Avatar user={u} size={36} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink">{u.name}</p>
-                      <p className="truncate text-xs text-ink-soft">{u.email}</p>
-                    </div>
-                    <span className="grid size-7 place-items-center rounded-lg bg-bg text-ink-faint transition group-hover:bg-brand group-hover:text-white">
-                      <Check className="size-4" />
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {available.length > 0 ? (
+            <>
+              <Field label="Workspace user">
+                <select
+                  value={selectedUserId}
+                  onChange={(event) => chooseUser(event.target.value)}
+                  className={inputClass}
+                >
+                  {available.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} — {user.email}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
-          <div className="border-t border-line pt-5">
-            <p className="mb-3 text-sm font-semibold text-ink">Invite by email</p>
-            <div className="flex flex-col gap-4">
-              <Field label="Full Name">
-                <Input
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  placeholder="Jordan Kim"
-                />
-              </Field>
-              <Field label="Email">
-                <Input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="jordan@company.com"
-                />
-              </Field>
-              <Field label="Role">
+              {selectedUser && (
+                <div className="flex items-center gap-3 rounded-xl border border-line bg-bg p-3">
+                  <Avatar user={selectedUser} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ink">{selectedUser.name}</p>
+                    <p className="truncate text-xs text-ink-soft">{selectedUser.email}</p>
+                  </div>
+                  <RoleBadge role={selectedUser.role} />
+                </div>
+              )}
+
+              <Field
+                label="Project role"
+                hint={
+                  selectedUser?.role === "viewer"
+                    ? "A workspace viewer can only be added as a viewer."
+                    : "Workspace editors can be added as editor or viewer."
+                }
+              >
                 <Segmented
-                  value={inviteRole}
-                  onChange={setInviteRole}
-                  options={[
-                    { value: "editor", label: "Editor" },
-                    { value: "viewer", label: "Viewer" },
-                  ]}
+                  value={selectedRole}
+                  onChange={setSelectedRole}
+                  options={
+                    selectedUser?.role === "viewer"
+                      ? [{ value: "viewer", label: "Viewer" }]
+                      : [
+                          { value: "editor", label: "Editor" },
+                          { value: "viewer", label: "Viewer" },
+                        ]
+                  }
                 />
               </Field>
-            </div>
-          </div>
+            </>
+          ) : (
+            <p className="rounded-xl border border-line bg-bg px-4 py-5 text-center text-sm text-ink-soft">
+              All workspace users are already members of this project.
+            </p>
+          )}
         </div>
         <div className="flex justify-end gap-2.5 border-t border-line px-6 py-4">
           <Button variant="secondary" onClick={() => setPicking(false)}>
             Cancel
           </Button>
-          <Button onClick={invite} disabled={!inviteName.trim() || !inviteEmail.trim()}>
-            Send Invite
+          <Button onClick={addMember} disabled={!selectedUser}>
+            Add Member
           </Button>
         </div>
       </Modal>

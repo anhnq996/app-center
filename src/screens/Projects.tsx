@@ -1,21 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  Plus,
-  Search,
-  Pencil,
+  Boxes,
   Eye,
   Link2,
+  Pencil,
+  Plus,
+  Search,
   Trash2,
-  Boxes,
 } from "lucide-react";
-import { useStore } from "../lib/store";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { Button, ConfirmDialog, StatusBadge, useToast } from "../components/ui";
 import { Avatar } from "../components/UserBits";
+import { useStore } from "../lib/store";
 import type { Project } from "../lib/types";
+import { deleteProjectStatic } from "../lib/publishProject";
 
 function timeAgo(iso: string) {
   const d = new Date(iso);
@@ -118,7 +119,7 @@ export default function Projects() {
   }, [projects, query]);
 
   const copyLink = (p: Project) => {
-    const url = `${window.location.origin}/download/${p.slug}`;
+    const url = `${window.location.origin}/${p.slug}`;
     navigator.clipboard?.writeText(url).catch(() => {});
     toast("Public link copied");
   };
@@ -131,7 +132,7 @@ export default function Projects() {
           <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink">
             Projects
           </h1>
-          <p className="mt-1 text-ink-soft">Manage your app download pages.</p>
+          <p className="mt-1 text-ink-soft">Manage your App Center pages.</p>
         </div>
         <Button onClick={() => router.push("/admin/projects/new")} className="h-11">
           <Plus className="size-4" />
@@ -168,7 +169,7 @@ export default function Projects() {
                 </div>
                 <p className="text-sm text-ink-soft">{p.company}</p>
                 <p className="mt-0.5 truncate font-mono text-xs text-ink-faint">
-                  /download/{p.slug}
+                  /{p.slug}
                 </p>
               </div>
             </div>
@@ -187,7 +188,7 @@ export default function Projects() {
                 <ActionButton
                   icon={Eye}
                   label="Preview"
-                  onClick={() => window.open(`/download/${p.slug}`, "_blank")}
+                  onClick={() => window.open(`/${p.slug}`, "_blank")}
                 />
                 <ActionButton icon={Link2} label="Copy Link" onClick={() => copyLink(p)} />
                 <ActionButton
@@ -231,10 +232,11 @@ export default function Projects() {
         onConfirm={async () => {
           if (toDelete) {
             try {
+              await deleteProjectStatic(toDelete.slug);
               await deleteProject(toDelete.id);
               toast("Project deleted");
             } catch {
-              toast("Unable to delete project from Firestore");
+              toast("Unable to delete project and its static page");
             }
           }
           setToDelete(null);
