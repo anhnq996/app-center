@@ -1,0 +1,238 @@
+import type { Appearance, Platform, Project, User } from "./types";
+
+export function uid(prefix = "id") {
+  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+export const CURRENT_USER_ID = "user-me";
+
+const defaultAppearance = (): Appearance => ({
+  backgroundType: "gradient",
+  solidColor: "#0f172a",
+  gradientFrom: "#1e1b4b",
+  gradientTo: "#0f172a",
+  gradientDirection: "tlbr",
+  backgroundImage: null,
+  overlayStrength: 30,
+  textTheme: "light",
+  cardStyle: "glass",
+  cardRadius: "large",
+});
+
+const androidPlatform = (): Platform => ({
+  id: uid("plat"),
+  kind: "android",
+  name: "Android",
+  logo: null,
+  source: "file",
+  url: "https://play.google.com/store/apps/details?id=com.gosang.mobile",
+  fileName: "gosang-v2.1.0.apk",
+  fileSize: "42.6 MB",
+  label: "Tải xuống cho Android",
+  subtitle: "Version 2.1.0",
+  version: "2.1.0",
+  active: true,
+  history: [],
+});
+
+const iosPlatform = (): Platform => ({
+  id: uid("plat"),
+  kind: "ios",
+  name: "iOS",
+  logo: null,
+  source: "link",
+  url: "https://apps.apple.com/app/gosang-mobile/id1234567890",
+  fileName: null,
+  fileSize: null,
+  label: "Tải xuống cho iOS",
+  subtitle: "Available on App Store",
+  version: "2.1.0",
+  active: true,
+  history: [],
+});
+
+export function newProject(ownerId = CURRENT_USER_ID): Project {
+  return {
+    id: uid("proj"),
+    name: "",
+    company: "",
+    slug: "",
+    status: "active",
+    projectLogo: null,
+    projectLogoWidth: 152,
+    projectLogoHeight: 96,
+    companyLogo: null,
+    companyLogoWidth: 112,
+    companyLogoHeight: 28,
+    showCompanyLogo: true,
+    showCompanyName: true,
+    updatedAt: new Date().toISOString(),
+    appearance: defaultAppearance(),
+    platforms: [androidPlatform(), iosPlatform()],
+    ownerId,
+    memberIds: [ownerId],
+  };
+}
+
+export const seedUsers = (): User[] => [
+  {
+    id: CURRENT_USER_ID,
+    name: "Alex Morgan",
+    email: "admin@gosang.com",
+    role: "owner",
+    avatar: null,
+    createdAt: "2026-01-12T09:00:00.000Z",
+  },
+  {
+    id: "user-mai",
+    name: "Mai Tran",
+    email: "mai@gosang.com",
+    role: "editor",
+    avatar: null,
+    createdAt: "2026-03-04T09:00:00.000Z",
+  },
+  {
+    id: "user-david",
+    name: "David Lee",
+    email: "david@lumenlabs.io",
+    role: "editor",
+    avatar: null,
+    createdAt: "2026-05-21T09:00:00.000Z",
+  },
+  {
+    id: "user-sara",
+    name: "Sara Nguyen",
+    email: "sara@atlashealth.com",
+    role: "viewer",
+    avatar: null,
+    createdAt: "2026-06-18T09:00:00.000Z",
+  },
+];
+
+export const seedProjects = (): Project[] => [
+  {
+    id: "proj-gosang",
+    name: "Gosang Mobile",
+    company: "Gosang Corp",
+    slug: "gosang-mobile",
+    status: "active",
+    projectLogo: null,
+    companyLogo: null,
+    showCompanyName: true,
+    updatedAt: "2026-08-24T10:20:00.000Z",
+    appearance: {
+      backgroundType: "gradient",
+      solidColor: "#0f172a",
+      gradientFrom: "#312e81",
+      gradientTo: "#0b1120",
+      gradientDirection: "tlbr",
+      backgroundImage: null,
+      overlayStrength: 20,
+      textTheme: "light",
+      cardStyle: "glass",
+      cardRadius: "large",
+    },
+    platforms: [
+      {
+        ...androidPlatform(),
+        id: "plat-and-1",
+        history: [
+          {
+            id: "ver-a1",
+            version: "2.0.3",
+            source: "file",
+            url: "",
+            fileName: "gosang-v2.0.3.apk",
+            fileSize: "41.9 MB",
+            label: "Download for Android",
+            subtitle: "Version 2.0.3",
+            savedAt: "2026-07-30T10:00:00.000Z",
+          },
+          {
+            id: "ver-a2",
+            version: "2.0.0",
+            source: "file",
+            url: "",
+            fileName: "gosang-v2.0.0.apk",
+            fileSize: "40.2 MB",
+            label: "Download for Android",
+            subtitle: "Version 2.0.0",
+            savedAt: "2026-06-14T10:00:00.000Z",
+          },
+        ],
+      },
+      {
+        ...iosPlatform(),
+        id: "plat-ios-1",
+      },
+      {
+        id: "plat-win-1",
+        kind: "custom",
+        name: "Windows",
+        logo: null,
+        source: "link",
+        url: "https://downloads.gosang.com/gosang-setup.exe",
+        fileName: null,
+        fileSize: null,
+        label: "Download for Windows",
+        subtitle: "Windows 10 or later",
+        version: "1.2.0",
+        active: true,
+        history: [],
+      },
+    ],
+    ownerId: CURRENT_USER_ID,
+    memberIds: [CURRENT_USER_ID, "user-mai"],
+  },
+  {
+    id: "proj-lumen",
+    name: "Lumen Notes",
+    company: "Lumen Labs",
+    slug: "lumen-notes",
+    status: "active",
+    projectLogo: null,
+    companyLogo: null,
+    showCompanyName: true,
+    updatedAt: "2026-08-19T15:05:00.000Z",
+    appearance: {
+      ...defaultAppearance(),
+      backgroundType: "solid",
+      solidColor: "#0b132b",
+      textTheme: "light",
+      cardStyle: "solid",
+      cardRadius: "medium",
+    },
+    platforms: [
+      { ...androidPlatform(), id: "plat-and-2", subtitle: "Version 1.4.2", version: "1.4.2", fileName: "lumen-1.4.2.apk", fileSize: "28.1 MB" },
+      { ...iosPlatform(), id: "plat-ios-2" },
+    ],
+    ownerId: CURRENT_USER_ID,
+    memberIds: [CURRENT_USER_ID, "user-david"],
+  },
+  {
+    id: "proj-atlas",
+    name: "Atlas Fitness",
+    company: "Atlas Health",
+    slug: "atlas-fitness",
+    status: "inactive",
+    projectLogo: null,
+    companyLogo: null,
+    showCompanyName: false,
+    updatedAt: "2026-07-30T09:00:00.000Z",
+    appearance: {
+      ...defaultAppearance(),
+      backgroundType: "gradient",
+      gradientFrom: "#0f766e",
+      gradientTo: "#064e3b",
+      textTheme: "light",
+      cardStyle: "transparent",
+      cardRadius: "large",
+    },
+    platforms: [
+      { ...androidPlatform(), id: "plat-and-3", subtitle: "Version 3.0.0", version: "3.0.0" },
+      { ...iosPlatform(), id: "plat-ios-3" },
+    ],
+    ownerId: CURRENT_USER_ID,
+    memberIds: [CURRENT_USER_ID, "user-sara"],
+  },
+];

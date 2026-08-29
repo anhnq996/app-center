@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isWorkspaceManager() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["owner", "editor"];
+    }
+
+    function isOwner() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "owner";
+    }
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow create, update, delete: if isWorkspaceManager();
+    }
+
+    match /users/{userId} {
+      allow read: if isWorkspaceManager() || (signedIn() && request.auth.uid == userId);
+      allow create, update, delete: if isOwner();
+    }
+  }
+}

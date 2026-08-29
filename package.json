@@ -1,0 +1,31 @@
+{
+  "name": "app-download-management",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
+    "format": "oxfmt"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "firebase": "^12.18.0",
+    "firebase-admin": "^14.3.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^1.34.0",
+    "next": "^16.3.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "oxfmt": "^0.2.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

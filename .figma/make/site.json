@@ -1,0 +1,10 @@
+{
+  "description": "Create and customize markdown documents effortlessly with an intuitive interface, perfect for writers and developers seeking streamlined content creation.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
