@@ -1,5 +1,5 @@
-import SessionRedirect from "../components/auth/SessionRedirect";
+import AppCenter from "../components/AppCenter";
 
 export default function HomePage() {
-  return <SessionRedirect />;
+  return <AppCenter />;
 }
