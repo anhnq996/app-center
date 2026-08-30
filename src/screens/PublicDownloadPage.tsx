@@ -45,7 +45,7 @@ export default function PublicDownloadPage() {
 
   return (
     <div
-      className="relative min-h-screen w-full overflow-hidden"
+      className="relative h-dvh w-full overflow-hidden"
       style={backgroundStyle(a)}
     >
       {/* Background image layer */}
@@ -74,7 +74,7 @@ export default function PublicDownloadPage() {
       />
 
       {/* Content */}
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="relative flex h-dvh items-center justify-center overflow-hidden px-2.5 py-2 sm:px-4 sm:py-12">
         <div className="w-full max-w-[440px]">
           <DownloadCard project={project} detected={detected} />
         </div>

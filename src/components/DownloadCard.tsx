@@ -46,19 +46,18 @@ function DownloadButton({
       rel="noreferrer"
       download={shouldDownloadFile(platform) ? platform.fileName || true : undefined}
       onClick={(e) => !href && e.preventDefault()}
-      className={`group relative flex items-center gap-3.5 rounded-[18px] border px-4 transition-all duration-200 hover:-translate-y-0.5 ${
-        compact ? "py-3" : "py-3.5"
+      className={`group relative flex items-center rounded-[14px] border px-3 transition-all duration-200 hover:-translate-y-0.5 sm:gap-3.5 sm:rounded-[18px] sm:px-4 ${
+        compact ? "min-h-[56px] gap-3 py-2.5 sm:min-h-[60px] sm:py-3" : "min-h-[52px] gap-2.5 py-2 sm:min-h-[68px] sm:py-3.5"
       } ${
         light
           ? "border-white/15 bg-white/10 text-white hover:bg-white/16 hover:shadow-[0_16px_40px_-12px_rgba(0,0,0,0.5)]"
           : "border-ink/10 bg-ink/[0.04] text-ink hover:bg-ink/[0.07] hover:shadow-[0_16px_40px_-16px_rgba(15,23,41,0.35)]"
       }`}
-      style={{ minHeight: compact ? 60 : 68 }}
     >
       <span
-        className={`grid size-11 shrink-0 place-items-center ${
+        className={`grid size-[38px] shrink-0 place-items-center sm:size-11 ${
           showIconBackground
-            ? `rounded-2xl ${light ? "bg-white text-ink" : "bg-ink text-white"}`
+            ? `rounded-[13px] sm:rounded-2xl ${light ? "bg-white text-ink" : "bg-ink text-white"}`
             : light
               ? "bg-transparent text-white"
               : "bg-transparent text-ink"
@@ -74,7 +73,7 @@ function DownloadButton({
         >
           {label}
         </span>
-        <span className="truncate text-[15px] font-bold leading-tight">
+        <span className="truncate text-sm font-bold leading-tight sm:text-[15px]">
           {platform.name}
         </span>
         {platform.version && (
@@ -145,16 +144,16 @@ export function DownloadCard({
 
   return (
     <div
-      className={`w-full ${cardStyleClass} ${
+      className={`w-full ${compact ? "" : "p-4 sm:p-8"} ${cardStyleClass} ${
         project.appearance.cardStyle === "transparent"
           ? ""
           : "shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]"
       }`}
-      style={{ borderRadius: radius, padding: compact ? 20 : 32 }}
+      style={{ borderRadius: radius, padding: compact ? 20 : undefined }}
     >
       {/* Company */}
       {(project.showCompanyName || ((project.showCompanyLogo ?? true) && project.companyLogo)) && (
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center justify-center gap-2 sm:mb-6">
           {(project.showCompanyLogo ?? true) && project.companyLogo ? (
             <span
               className="flex max-w-full shrink-0 items-center justify-center overflow-hidden"
@@ -171,7 +170,7 @@ export function DownloadCard({
             </span>
           ) : null}
           {project.showCompanyName && (
-            <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${muted}`}>
+            <span className={`text-[10px] font-semibold uppercase tracking-[0.18em] sm:text-xs ${muted}`}>
               {project.company || "Company"}
             </span>
           )}
@@ -181,7 +180,7 @@ export function DownloadCard({
       {/* App logo + name */}
       <div className="flex flex-col items-center text-center">
         <div
-          className="mb-5 grid max-w-full shrink-0 place-items-center overflow-hidden"
+          className="mb-3 grid max-h-[18vh] max-w-[42vw] shrink-0 place-items-center overflow-hidden sm:mb-5 sm:max-h-none sm:max-w-full"
           style={{
             width: project.projectLogoWidth ?? 152,
             height: project.projectLogoHeight ?? 96,
@@ -196,22 +195,22 @@ export function DownloadCard({
             />
           ) : (
             <div className="grid size-full place-items-center bg-gradient-to-br from-indigo-500 to-violet-700">
-              <span className="font-display text-2xl font-extrabold text-white">
+              <span className="font-display text-[22px] font-extrabold text-white sm:text-2xl">
                 {initials(project.name || "App")}
               </span>
             </div>
           )}
         </div>
         <h1
-          className={`font-display max-w-full break-words text-[26px] font-extrabold leading-tight tracking-tight ${strong}`}
+          className={`font-display max-w-full break-words text-[22px] font-extrabold leading-[1.08] tracking-tight sm:text-[26px] sm:leading-tight ${strong}`}
         >
           {project.name || "Your App"}
         </h1>
-        <p className={`mt-1.5 text-sm ${muted}`}>Chọn nền tảng để tải xuống</p>
+        <p className={`mt-1 text-xs sm:mt-1.5 sm:text-sm ${muted}`}>Chọn nền tảng để tải xuống</p>
       </div>
 
       {/* Buttons */}
-      <div className="mt-7 flex flex-col gap-2.5">
+      <div className="mt-4 flex flex-col gap-2 sm:mt-7 sm:gap-2.5">
         {platforms.length === 0 && (
           <p className={`py-4 text-center text-sm ${muted}`}>
             Chưa có nền tảng tải xuống nào đang hoạt động.
@@ -229,7 +228,7 @@ export function DownloadCard({
         ))}
       </div>
 
-      <p className={`mt-6 text-center text-[11px] ${muted}`}>
+      <p className={`mt-3 text-center text-[10px] sm:mt-6 sm:text-[11px] ${muted}`}>
         Tải xuống an toàn · Luôn là phiên bản mới nhất
       </p>
     </div>
