@@ -51,7 +51,7 @@ export function GeneralTab({
               <span className="font-semibold text-danger">This slug is already used by another project.</span>
             ) : (
               <>
-                Public page: <span className="font-mono text-ink-soft">/{draft.slug || "your-slug"}</span>
+                Public page: <span className="font-mono text-ink-soft">/app/{draft.slug || "your-slug"}</span>
               </>
             )}
           >

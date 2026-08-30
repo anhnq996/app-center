@@ -201,7 +201,7 @@ export async function POST(
       await rm(safeStaticPath(staticRoot, previousSlug), { recursive: true, force: true });
     }
 
-    return NextResponse.json({ url: `/${slug}` });
+    return NextResponse.json({ url: `/app/${slug}` });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unable to publish static project" },

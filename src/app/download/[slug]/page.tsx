@@ -6,5 +6,5 @@ export default async function DownloadPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/${slug}`);
+  redirect(`/app/${slug}`);
 }

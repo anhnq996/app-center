@@ -17,6 +17,7 @@ import type { Project } from "../lib/types"
 import { backgroundStyle } from "../lib/appearance"
 import { downloadProjectHtml } from "../lib/exportProjectHtml"
 import { publishProjectStatic } from "../lib/publishProject"
+import { publicAppPath, publicAppUrl } from "../lib/publicLinks"
 import { Button, useToast } from "../components/ui"
 import { GeneralTab } from "../components/editor/GeneralTab"
 import { AppearanceTab } from "../components/editor/AppearanceTab"
@@ -156,7 +157,7 @@ export default function ProjectEditor() {
   const preview = async () => {
     try {
       const saved = await persistProject()
-      window.open(`/${saved.slug}`, "_blank")
+      window.open(publicAppPath(saved.slug), "_blank")
     } catch (error) {
       toast(
         error instanceof Error ? error.message : "Unable to publish preview",
@@ -176,7 +177,7 @@ export default function ProjectEditor() {
   const copyLink = async () => {
     try {
       const saved = await persistProject()
-      await copyToClipboard(`${window.location.origin}/${saved.slug}`)
+      await copyToClipboard(publicAppUrl(window.location.origin, saved.slug))
       toast("Public link copied")
     } catch (error) {
       toast(

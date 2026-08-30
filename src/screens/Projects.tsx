@@ -17,6 +17,7 @@ import { Avatar } from "../components/UserBits";
 import { useStore } from "../lib/store";
 import type { Project } from "../lib/types";
 import { deleteProjectStatic } from "../lib/publishProject";
+import { publicAppPath, publicAppUrl } from "../lib/publicLinks";
 
 function timeAgo(iso: string) {
   const d = new Date(iso);
@@ -119,7 +120,7 @@ export default function Projects() {
   }, [projects, query]);
 
   const copyLink = (p: Project) => {
-    const url = `${window.location.origin}/${p.slug}`;
+    const url = publicAppUrl(window.location.origin, p.slug);
     navigator.clipboard?.writeText(url).catch(() => {});
     toast("Public link copied");
   };
@@ -169,7 +170,7 @@ export default function Projects() {
                 </div>
                 <p className="text-sm text-ink-soft">{p.company}</p>
                 <p className="mt-0.5 truncate font-mono text-xs text-ink-faint">
-                  /{p.slug}
+                  {publicAppPath(p.slug)}
                 </p>
               </div>
             </div>
@@ -188,7 +189,7 @@ export default function Projects() {
                 <ActionButton
                   icon={Eye}
                   label="Preview"
-                  onClick={() => window.open(`/${p.slug}`, "_blank")}
+                  onClick={() => window.open(publicAppPath(p.slug), "_blank")}
                 />
                 <ActionButton icon={Link2} label="Copy Link" onClick={() => copyLink(p)} />
                 <ActionButton
