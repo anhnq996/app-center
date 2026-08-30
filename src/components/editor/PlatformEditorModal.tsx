@@ -60,6 +60,7 @@ export function PlatformEditorModal({
   const [draft, setDraft] = useState<Platform | null>(platform)
   const [uploading, setUploading] = useState(false)
   const [ipaFile, setIpaFile] = useState<File | null>(null)
+  const [ipaInputKey, setIpaInputKey] = useState(0)
   const toast = useToast()
 
   useEffect(() => {
@@ -85,6 +86,7 @@ export function PlatformEditorModal({
       },
     )
     setIpaFile(null)
+    setIpaInputKey((key) => key + 1)
     setUploading(false)
   }, [platform, open])
 
@@ -94,7 +96,7 @@ export function PlatformEditorModal({
   const isBuiltIn = draft.kind !== "custom"
   const iosOtaEnabled = isIosOtaPlatform(draft)
 
-  const uploadRequest = async (formData: FormData) => {
+  const uploadRequest = async (formData: FormData, platformId = draft.id) => {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(projectSlug)) {
       throw new Error(
         "Enter and save a valid project slug before uploading files",
@@ -102,7 +104,7 @@ export function PlatformEditorModal({
     }
     const currentUser = auth?.currentUser
     if (!currentUser) throw new Error("You must be signed in to upload files")
-    formData.set("platformId", draft.id)
+    formData.set("platformId", platformId)
     const response = await fetch(
       `/api/uploads/${encodeURIComponent(projectSlug)}`,
       {
@@ -134,7 +136,7 @@ export function PlatformEditorModal({
       const formData = new FormData()
       formData.set("mode", "direct")
       formData.set("file", file)
-      const result = await uploadRequest(formData)
+      const result = await uploadRequest(formData, draft.id)
       setDraft((current) =>
         current
           ? {
@@ -165,7 +167,7 @@ export function PlatformEditorModal({
     formData.set("ipa", ipaFile)
     formData.set("name", platformDraft.name)
     formData.set("version", platformDraft.version)
-    const result = await uploadRequest(formData)
+    const result = await uploadRequest(formData, platformDraft.id)
     return {
       ...platformDraft,
       url: result.url ?? "",
@@ -188,6 +190,10 @@ export function PlatformEditorModal({
           ? await uploadIosPackage(draft)
           : draft
       setDraft(platformToSave)
+      if (shouldUploadIpa) {
+        setIpaFile(null)
+        setIpaInputKey((key) => key + 1)
+      }
       onSave(platformToSave)
       if (shouldUploadIpa) toast("IPA uploaded and plist generated")
     } catch (error) {
@@ -336,12 +342,29 @@ export function PlatformEditorModal({
                     {ipaFile?.name || draft.fileName || "Choose .ipa"}
                   </span>
                   <input
+                    key={ipaInputKey}
                     type="file"
                     accept=".ipa,application/octet-stream"
                     className="hidden"
-                    onChange={(event) =>
-                      setIpaFile(event.target.files?.[0] ?? null)
-                    }
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null
+                      setIpaFile(file)
+                      if (!file) return
+                      setDraft((current) =>
+                        current
+                          ? {
+                              ...current,
+                              url: "",
+                              ipaUrl: null,
+                              fileName: file.name,
+                              fileSize: formatFileSize(file.size),
+                              manifestFileName: null,
+                              linkBehavior: "ios-manifest",
+                              iosOta: true,
+                            }
+                          : current,
+                      )
+                    }}
                   />
                 </label>
               </Field>
