@@ -160,6 +160,7 @@ export function DownloadButtonsTab({
         mode="edit"
         platform={editing}
         projectSlug={draft.slug}
+        projectId={draft.id}
         onClose={() => setEditing(null)}
         onSave={savePlatform}
       />
@@ -168,6 +169,7 @@ export function DownloadButtonsTab({
         mode="add"
         platform={null}
         projectSlug={draft.slug}
+        projectId={draft.id}
         onClose={() => setAdding(false)}
         onSave={savePlatform}
       />

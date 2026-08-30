@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
+    "bplist-parser": "^0.3.2",
     "firebase": "^12.18.0",
     "firebase-admin": "^14.3.0",
     "jszip": "^3.10.1",

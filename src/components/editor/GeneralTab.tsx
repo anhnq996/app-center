@@ -80,6 +80,8 @@ export function GeneralTab({
         <LogoUploader
           value={draft.projectLogo}
           onChange={(v) => patch({ projectLogo: v })}
+          uploadProjectId={draft.id}
+          uploadSlot="project-logo"
           fallback={<Boxes className="size-8 text-ink-faint" />}
         />
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -124,6 +126,8 @@ export function GeneralTab({
         <LogoUploader
           value={draft.companyLogo}
           onChange={(v) => patch({ companyLogo: v })}
+          uploadProjectId={draft.id}
+          uploadSlot="company-logo"
           size={72}
           radius={0}
           framed={false}

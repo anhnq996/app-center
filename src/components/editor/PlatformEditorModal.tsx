@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
 import {
   FileArchive,
   FileCheck2,
@@ -7,8 +7,8 @@ import {
   LinkIcon,
   LoaderCircle,
   RotateCcw,
-} from "lucide-react";
-import type { Platform, PlatformVersion } from "../../lib/types";
+} from "lucide-react"
+import type { Platform, PlatformVersion } from "../../lib/types"
 import {
   Button,
   Field,
@@ -18,26 +18,26 @@ import {
   Segmented,
   Toggle,
   useToast,
-} from "../ui";
-import { LogoUploader } from "../ImageUploader";
-import { PlatformGlyph } from "../PlatformGlyph";
-import { uid } from "../../lib/data";
-import { auth } from "../../lib/firebase";
-import { isIosOtaPlatform } from "../../lib/platformLinks";
-import { MAX_VERSIONS } from "../../lib/versioning";
+} from "../ui"
+import { LogoUploader } from "../ImageUploader"
+import { PlatformGlyph } from "../PlatformGlyph"
+import { uid } from "../../lib/data"
+import { auth } from "../../lib/firebase"
+import { isIosOtaPlatform } from "../../lib/platformLinks"
+import { MAX_VERSIONS } from "../../lib/versioning"
 
 function relTime(iso: string) {
-  const date = new Date(iso);
-  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const date = new Date(iso)
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000)
+  if (days <= 0) return "today"
+  if (days === 1) return "yesterday"
+  if (days < 30) return `${days}d ago`
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function PlatformEditorModal({
@@ -45,22 +45,22 @@ export function PlatformEditorModal({
   platform,
   mode,
   projectSlug,
+  projectId,
   onClose,
   onSave,
 }: {
-  open: boolean;
-  platform: Platform | null;
-  mode: "edit" | "add";
-  projectSlug: string;
-  onClose: () => void;
-  onSave: (platform: Platform) => void;
+  open: boolean
+  platform: Platform | null
+  mode: "edit" | "add"
+  projectSlug: string
+  projectId: string
+  onClose: () => void
+  onSave: (platform: Platform) => void
 }) {
-  const [draft, setDraft] = useState<Platform | null>(platform);
-  const [uploading, setUploading] = useState(false);
-  const [ipaFile, setIpaFile] = useState<File | null>(null);
-  const [plistFile, setPlistFile] = useState<File | null>(null);
-  const [rewriteManifestUrl, setRewriteManifestUrl] = useState(true);
-  const toast = useToast();
+  const [draft, setDraft] = useState<Platform | null>(platform)
+  const [uploading, setUploading] = useState(false)
+  const [ipaFile, setIpaFile] = useState<File | null>(null)
+  const toast = useToast()
 
   useEffect(() => {
     setDraft(
@@ -83,54 +83,58 @@ export function PlatformEditorModal({
         active: true,
         history: [],
       },
-    );
-    setIpaFile(null);
-    setPlistFile(null);
-    setRewriteManifestUrl(true);
-    setUploading(false);
-  }, [platform, open]);
+    )
+    setIpaFile(null)
+    setUploading(false)
+  }, [platform, open])
 
-  if (!draft) return null;
+  if (!draft) return null
   const set = <K extends keyof Platform>(key: K, value: Platform[K]) =>
-    setDraft((current) => (current ? { ...current, [key]: value } : current));
-  const isBuiltIn = draft.kind !== "custom";
-  const iosOtaEnabled = isIosOtaPlatform(draft);
+    setDraft((current) => (current ? { ...current, [key]: value } : current))
+  const isBuiltIn = draft.kind !== "custom"
+  const iosOtaEnabled = isIosOtaPlatform(draft)
 
   const uploadRequest = async (formData: FormData) => {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(projectSlug)) {
-      throw new Error("Enter and save a valid project slug before uploading files");
+      throw new Error(
+        "Enter and save a valid project slug before uploading files",
+      )
     }
-    const currentUser = auth?.currentUser;
-    if (!currentUser) throw new Error("You must be signed in to upload files");
-    formData.set("platformId", draft.id);
-    const response = await fetch(`/api/uploads/${encodeURIComponent(projectSlug)}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${await currentUser.getIdToken()}` },
-      body: formData,
-    });
+    const currentUser = auth?.currentUser
+    if (!currentUser) throw new Error("You must be signed in to upload files")
+    formData.set("platformId", draft.id)
+    const response = await fetch(
+      `/api/uploads/${encodeURIComponent(projectSlug)}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${await currentUser.getIdToken()}` },
+        body: formData,
+      },
+    )
     const result = (await response.json().catch(() => null)) as {
-      error?: string;
-      url?: string;
-      ipaUrl?: string;
-      fileName?: string;
-      fileSize?: string;
-      manifestFileName?: string;
-    } | null;
-    if (!response.ok || !result) throw new Error(result?.error || "Unable to upload file");
-    return result;
-  };
+      error?: string
+      url?: string
+      ipaUrl?: string
+      fileName?: string
+      fileSize?: string
+      manifestFileName?: string
+    } | null
+    if (!response.ok || !result)
+      throw new Error(result?.error || "Unable to upload file")
+    return result
+  }
 
   const uploadDirectFile = async (file: File) => {
     if (draft.kind === "android" && !file.name.toLowerCase().endsWith(".apk")) {
-      toast("Android files must use the .apk extension");
-      return;
+      toast("Android files must use the .apk extension")
+      return
     }
-    setUploading(true);
+    setUploading(true)
     try {
-      const formData = new FormData();
-      formData.set("mode", "direct");
-      formData.set("file", file);
-      const result = await uploadRequest(formData);
+      const formData = new FormData()
+      formData.set("mode", "direct")
+      formData.set("file", file)
+      const result = await uploadRequest(formData)
       setDraft((current) =>
         current
           ? {
@@ -142,33 +146,29 @@ export function PlatformEditorModal({
               fileSize: result.fileSize ?? formatFileSize(file.size),
             }
           : current,
-      );
-      toast("File uploaded");
+      )
+      toast("File uploaded")
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Unable to upload file");
+      toast(error instanceof Error ? error.message : "Unable to upload file")
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const uploadIosPackage = async () => {
-    if (!ipaFile || !plistFile) return;
+    if (!ipaFile) return
     if (!ipaFile.name.toLowerCase().endsWith(".ipa")) {
-      toast("Select a valid .ipa file");
-      return;
+      toast("Select a valid .ipa file")
+      return
     }
-    if (!plistFile.name.toLowerCase().endsWith(".plist")) {
-      toast("Select a valid .plist manifest");
-      return;
-    }
-    setUploading(true);
+    setUploading(true)
     try {
-      const formData = new FormData();
-      formData.set("mode", "ios");
-      formData.set("ipa", ipaFile);
-      formData.set("plist", plistFile);
-      formData.set("rewriteManifestUrl", String(rewriteManifestUrl));
-      const result = await uploadRequest(formData);
+      const formData = new FormData()
+      formData.set("mode", "ios")
+      formData.set("ipa", ipaFile)
+      formData.set("name", draft.name)
+      formData.set("version", draft.version)
+      const result = await uploadRequest(formData)
       setDraft((current) =>
         current
           ? {
@@ -179,17 +179,19 @@ export function PlatformEditorModal({
               iosOta: true,
               fileName: result.fileName ?? ipaFile.name,
               fileSize: result.fileSize ?? formatFileSize(ipaFile.size),
-              manifestFileName: result.manifestFileName ?? plistFile.name,
+              manifestFileName: result.manifestFileName ?? "manifest.plist",
             }
           : current,
-      );
-      toast("IPA and plist uploaded");
+      )
+      toast("IPA uploaded and plist generated")
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Unable to upload iOS package");
+      toast(
+        error instanceof Error ? error.message : "Unable to upload iOS package",
+      )
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
-  };
+  }
 
   const rollback = (version: PlatformVersion) => {
     setDraft((current) =>
@@ -209,14 +211,18 @@ export function PlatformEditorModal({
             subtitle: version.subtitle,
           }
         : current,
-    );
-    toast(`Restored v${version.version} — Save to apply`);
-  };
+    )
+    toast(`Restored v${version.version} — Save to apply`)
+  }
 
   return (
     <Modal open={open} onClose={onClose}>
       <ModalHeader
-        title={mode === "add" ? "Add Download Button" : `Edit ${draft.name || "Platform"}`}
+        title={
+          mode === "add"
+            ? "Add Download Button"
+            : `Edit ${draft.name || "Platform"}`
+        }
         subtitle="Configure how this platform appears and downloads."
         onClose={onClose}
       />
@@ -238,13 +244,23 @@ export function PlatformEditorModal({
         </div>
 
         {draft.kind === "custom" && (
-          <Field label="Platform Logo" hint="Square image works best (PNG or SVG).">
+          <Field
+            label="Platform Logo"
+            hint="Square image works best (PNG or SVG)."
+          >
             <LogoUploader
               value={draft.logo}
               onChange={(value) => set("logo", value)}
+              uploadProjectId={projectId}
+              uploadSlot={`platform-${draft.id}-logo`}
               size={64}
               radius={16}
-              fallback={<PlatformGlyph platform={draft} className="size-6 text-ink-faint" />}
+              fallback={
+                <PlatformGlyph
+                  platform={draft}
+                  className="size-6 text-ink-faint"
+                />
+              }
             />
           </Field>
         )}
@@ -263,7 +279,9 @@ export function PlatformEditorModal({
                       fileName: null,
                       fileSize: null,
                       manifestFileName: null,
-                      linkBehavior: current.iosOta ? "ios-manifest" : "download",
+                      linkBehavior: current.iosOta
+                        ? "ios-manifest"
+                        : "download",
                     }
                   : current,
               )
@@ -277,9 +295,12 @@ export function PlatformEditorModal({
 
         <div className="flex items-center justify-between rounded-xl border border-line bg-bg px-4 py-3">
           <div className="pr-4">
-            <p className="text-sm font-semibold text-ink">iOS OTA installation</p>
+            <p className="text-sm font-semibold text-ink">
+              iOS OTA installation
+            </p>
             <p className="text-xs leading-relaxed text-ink-faint">
-              Enable only when this button installs an iOS app through an IPA and plist manifest.
+              Enable only when this button installs an iOS app through an IPA
+              and plist manifest.
             </p>
           </div>
           <Toggle
@@ -301,93 +322,92 @@ export function PlatformEditorModal({
         {draft.source === "file" ? (
           iosOtaEnabled ? (
             <div className="flex flex-col gap-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="IPA file">
-                  <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-line-strong bg-bg px-3 text-center transition hover:border-brand hover:text-brand">
-                    <FileUp className="mb-1 size-5" />
-                    <span className="max-w-full truncate text-sm font-semibold">
-                      {ipaFile?.name || draft.fileName || "Choose .ipa"}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".ipa,application/octet-stream"
-                      className="hidden"
-                      onChange={(event) => setIpaFile(event.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                </Field>
-                <Field label="Manifest plist">
-                  <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-line-strong bg-bg px-3 text-center transition hover:border-brand hover:text-brand">
-                    <FileUp className="mb-1 size-5" />
-                    <span className="max-w-full truncate text-sm font-semibold">
-                      {plistFile?.name || draft.manifestFileName || "Choose .plist"}
-                    </span>
-                    <input
-                      type="file"
-                      accept=".plist,text/xml,application/xml"
-                      className="hidden"
-                      onChange={(event) => setPlistFile(event.target.files?.[0] ?? null)}
-                    />
-                  </label>
-                </Field>
-              </div>
+              <Field
+                label="IPA file"
+                hint="The server will generate the OTA manifest plist automatically."
+              >
+                <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-line-strong bg-bg px-3 text-center transition hover:border-brand hover:text-brand">
+                  <FileUp className="mb-1 size-5" />
+                  <span className="max-w-full truncate text-sm font-semibold">
+                    {ipaFile?.name || draft.fileName || "Choose .ipa"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".ipa,application/octet-stream"
+                    className="hidden"
+                    onChange={(event) =>
+                      setIpaFile(event.target.files?.[0] ?? null)
+                    }
+                  />
+                </label>
+              </Field>
               <Button
                 variant="secondary"
                 onClick={uploadIosPackage}
-                disabled={!ipaFile || !plistFile || uploading}
+                disabled={!ipaFile || uploading}
               >
-                {uploading ? <LoaderCircle className="size-4 animate-spin" /> : <FileUp className="size-4" />}
-                Upload IPA &amp; plist
+                {uploading ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <FileUp className="size-4" />
+                )}
+                Upload IPA
               </Button>
-              <div className="flex items-center justify-between rounded-xl border border-line bg-bg px-4 py-3">
-                <div className="pr-4">
-                  <p className="text-sm font-semibold text-ink">Update IPA URL in plist</p>
-                  <p className="text-xs leading-relaxed text-ink-faint">
-                    Replace the software-package URL with the IPA uploaded to this server.
-                  </p>
-                </div>
-                <Toggle checked={rewriteManifestUrl} onChange={setRewriteManifestUrl} />
-              </div>
               <p className="text-xs leading-relaxed text-ink-faint">
-                {rewriteManifestUrl
-                  ? "The plist will reference the IPA uploaded above."
-                  : "The plist is uploaded unchanged and must already contain a valid public IPA URL."}
+                The generated plist will reference the uploaded IPA and use
+                metadata from the app bundle.
               </p>
             </div>
           ) : (
-            <Field label={draft.kind === "android" ? "Upload APK" : "Upload File"}>
+            <Field
+              label={draft.kind === "android" ? "Upload APK" : "Upload File"}
+            >
               {draft.fileName && draft.url ? (
                 <div className="flex items-center gap-3 rounded-xl border border-line bg-bg px-3.5 py-3">
                   <FileCheck2 className="size-5 text-success" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink">{draft.fileName}</p>
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {draft.fileName}
+                    </p>
                     <p className="text-xs text-ink-faint">{draft.fileSize}</p>
                   </div>
                   <label className="cursor-pointer text-xs font-semibold text-ink-soft hover:text-brand">
                     Replace
                     <input
                       type="file"
-                      accept={draft.kind === "android" ? ".apk,application/vnd.android.package-archive" : undefined}
+                      accept={
+                        draft.kind === "android"
+                          ? ".apk,application/vnd.android.package-archive"
+                          : undefined
+                      }
                       className="hidden"
                       onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) void uploadDirectFile(file);
+                        const file = event.target.files?.[0]
+                        if (file) void uploadDirectFile(file)
                       }}
                     />
                   </label>
                 </div>
               ) : (
                 <label className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-bg py-6 text-sm font-semibold text-ink-soft transition hover:border-brand hover:text-brand">
-                  {uploading ? <LoaderCircle className="size-5 animate-spin" /> : <FileUp className="size-5" />}
+                  {uploading ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <FileUp className="size-5" />
+                  )}
                   {uploading ? "Uploading..." : "Choose file to upload"}
                   <input
                     type="file"
-                    accept={draft.kind === "android" ? ".apk,application/vnd.android.package-archive" : undefined}
+                    accept={
+                      draft.kind === "android"
+                        ? ".apk,application/vnd.android.package-archive"
+                        : undefined
+                    }
                     className="hidden"
                     disabled={uploading}
                     onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void uploadDirectFile(file);
+                      const file = event.target.files?.[0]
+                      if (file) void uploadDirectFile(file)
                     }}
                   />
                 </label>
@@ -416,7 +436,10 @@ export function PlatformEditorModal({
         )}
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Version" hint="Changing this snapshots the previous version.">
+          <Field
+            label="Version"
+            hint="Changing this snapshots the previous version."
+          >
             <Input
               value={draft.version}
               onChange={(event) => set("version", event.target.value)}
@@ -445,8 +468,12 @@ export function PlatformEditorModal({
           <div className="rounded-xl border border-line bg-bg p-4">
             <div className="mb-3 flex items-center gap-2">
               <History className="size-4 text-ink-soft" />
-              <span className="text-sm font-semibold text-ink">Version history</span>
-              <span className="text-xs text-ink-faint">(last {MAX_VERSIONS} kept)</span>
+              <span className="text-sm font-semibold text-ink">
+                Version history
+              </span>
+              <span className="text-xs text-ink-faint">
+                (last {MAX_VERSIONS} kept)
+              </span>
             </div>
             <div className="flex flex-col gap-2">
               {draft.history.map((version) => (
@@ -455,7 +482,11 @@ export function PlatformEditorModal({
                   className="flex items-center gap-3 rounded-lg border border-line bg-surface p-2.5"
                 >
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-bg text-ink-soft">
-                    {version.source === "file" ? <FileArchive className="size-4" /> : <LinkIcon className="size-4" />}
+                    {version.source === "file" ? (
+                      <FileArchive className="size-4" />
+                    ) : (
+                      <LinkIcon className="size-4" />
+                    )}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-ink">
@@ -466,7 +497,9 @@ export function PlatformEditorModal({
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-ink-faint">Saved {relTime(version.savedAt)}</p>
+                    <p className="text-xs text-ink-faint">
+                      Saved {relTime(version.savedAt)}
+                    </p>
                   </div>
                   <button
                     onClick={() => rollback(version)}
@@ -484,14 +517,21 @@ export function PlatformEditorModal({
         <div className="flex items-center justify-between rounded-xl border border-line bg-bg px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-ink">Active</p>
-            <p className="text-xs text-ink-faint">Show this button on the public page.</p>
+            <p className="text-xs text-ink-faint">
+              Show this button on the public page.
+            </p>
           </div>
-          <Toggle checked={draft.active} onChange={(value) => set("active", value)} />
+          <Toggle
+            checked={draft.active}
+            onChange={(value) => set("active", value)}
+          />
         </div>
       </div>
 
       <div className="flex justify-end gap-2.5 border-t border-line px-6 py-4">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           onClick={() => onSave(draft)}
           disabled={!draft.name.trim() || !draft.url.trim() || uploading}
@@ -500,5 +540,5 @@ export function PlatformEditorModal({
         </Button>
       </div>
     </Modal>
-  );
+  )
 }

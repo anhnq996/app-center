@@ -15,8 +15,9 @@ export async function GET(
   }
   try {
     const publicRoot = path.resolve(process.cwd(), "public");
-    const filePath = path.resolve(publicRoot, slug, "index.html");
-    if (!filePath.startsWith(`${publicRoot}${path.sep}`)) {
+    const staticRoot = path.resolve(publicRoot, "app");
+    const filePath = path.resolve(staticRoot, slug, "index.html");
+    if (!filePath.startsWith(`${staticRoot}${path.sep}`)) {
       return new NextResponse("Not found", { status: 404 });
     }
     const html = await readFile(filePath, "utf8");

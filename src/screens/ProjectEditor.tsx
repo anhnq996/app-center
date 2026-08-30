@@ -1,29 +1,36 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { ChevronRight, Eye, FileDown, Save, Smartphone } from "lucide-react";
-import { useStore } from "../lib/store";
-import { newProject } from "../lib/data";
-import type { Project } from "../lib/types";
-import { backgroundStyle } from "../lib/appearance";
-import { downloadProjectHtml } from "../lib/exportProjectHtml";
-import { publishProjectStatic } from "../lib/publishProject";
-import { Button, useToast } from "../components/ui";
-import { GeneralTab } from "../components/editor/GeneralTab";
-import { AppearanceTab } from "../components/editor/AppearanceTab";
-import { DownloadButtonsTab } from "../components/editor/DownloadButtonsTab";
-import { MembersTab } from "../components/editor/MembersTab";
-import { DownloadCard } from "../components/DownloadCard";
+import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import {
+  ChevronRight,
+  Eye,
+  FileDown,
+  Link2,
+  Save,
+  Smartphone,
+} from "lucide-react"
+import { useStore } from "../lib/store"
+import { newProject } from "../lib/data"
+import type { Project } from "../lib/types"
+import { backgroundStyle } from "../lib/appearance"
+import { downloadProjectHtml } from "../lib/exportProjectHtml"
+import { publishProjectStatic } from "../lib/publishProject"
+import { Button, useToast } from "../components/ui"
+import { GeneralTab } from "../components/editor/GeneralTab"
+import { AppearanceTab } from "../components/editor/AppearanceTab"
+import { DownloadButtonsTab } from "../components/editor/DownloadButtonsTab"
+import { MembersTab } from "../components/editor/MembersTab"
+import { DownloadCard } from "../components/DownloadCard"
 
-type Tab = "general" | "appearance" | "buttons" | "members";
+type Tab = "general" | "appearance" | "buttons" | "members"
 const tabs: { id: Tab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "appearance", label: "Appearance" },
   { id: "buttons", label: "Download Buttons" },
   { id: "members", label: "Members" },
-];
+]
 
 function PhonePreview({ project }: { project: Project }) {
   return (
@@ -45,7 +52,9 @@ function PhonePreview({ project }: { project: Project }) {
                   />
                   <div
                     className="absolute inset-0 bg-black"
-                    style={{ opacity: project.appearance.overlayStrength / 100 }}
+                    style={{
+                      opacity: project.appearance.overlayStrength / 100,
+                    }}
                   />
                 </>
               )}
@@ -56,86 +65,129 @@ function PhonePreview({ project }: { project: Project }) {
         </div>
       </div>
     </div>
-  );
+  )
+}
+
+async function copyToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  const textarea = document.createElement("textarea")
+  textarea.value = text
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand("copy")
+  textarea.remove()
 }
 
 export default function ProjectEditor() {
-  const id = useParams<{ id: string }>()?.id;
-  const router = useRouter();
-  const toast = useToast();
-  const { projects, getProject, addProject, updateProject, currentUser } = useStore();
+  const id = useParams<{ id: string }>()?.id
+  const router = useRouter()
+  const toast = useToast()
+  const { projects, getProject, addProject, updateProject, currentUser } =
+    useStore()
 
-  const isNew = id === "new" || !id;
-  const existing = isNew ? undefined : getProject(id!);
+  const isNew = id === "new" || !id
+  const existing = isNew ? undefined : getProject(id!)
 
-  const [draft, setDraft] = useState<Project>(() => existing ?? newProject(currentUser.id));
-  const [tab, setTab] = useState<Tab>("general");
+  const [draft, setDraft] = useState<Project>(
+    () => existing ?? newProject(currentUser.id),
+  )
+  const [tab, setTab] = useState<Tab>("general")
 
   useEffect(() => {
-    if (existing) setDraft(existing);
-  }, [existing]);
+    if (existing) setDraft(existing)
+  }, [existing])
 
-  const patch = (p: Partial<Project>) => setDraft((d) => ({ ...d, ...p }));
+  const patch = (p: Partial<Project>) => setDraft((d) => ({ ...d, ...p }))
 
-  const normalizedSlug = draft.slug.replace(/-+$/g, "");
+  const normalizedSlug = draft.slug.replace(/-+$/g, "")
   const slugTaken = useMemo(
-    () => projects.some(
-      (project) => project.id !== draft.id && project.slug.toLowerCase() === normalizedSlug.toLowerCase(),
-    ),
+    () =>
+      projects.some(
+        (project) =>
+          project.id !== draft.id &&
+          project.slug.toLowerCase() === normalizedSlug.toLowerCase(),
+      ),
     [projects, draft.id, normalizedSlug],
-  );
+  )
   const canSave = Boolean(
     draft.name.trim() &&
       normalizedSlug &&
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedSlug) &&
-      !["admin", "api", "download", "assets", "_next"].includes(normalizedSlug) &&
+      !["admin", "api", "download", "assets", "_next"].includes(
+        normalizedSlug,
+      ) &&
       !slugTaken,
-  );
+  )
 
   const persistProject = async () => {
     if (!canSave) {
-      if (slugTaken) throw new Error("This slug is already used by another project");
-      throw new Error("Add a project name and a valid slug first");
+      if (slugTaken)
+        throw new Error("This slug is already used by another project")
+      throw new Error("Add a project name and a valid slug first")
     }
-    const projectToSave = { ...draft, slug: normalizedSlug };
-    await publishProjectStatic(projectToSave, existing?.slug);
-    if (isNew && !getProject(projectToSave.id)) await addProject(projectToSave);
-    else await updateProject(projectToSave);
-    setDraft(projectToSave);
-    return projectToSave;
-  };
+    const projectToSave = { ...draft, slug: normalizedSlug }
+    await publishProjectStatic(projectToSave, existing?.slug)
+    if (isNew && !getProject(projectToSave.id)) await addProject(projectToSave)
+    else await updateProject(projectToSave)
+    setDraft(projectToSave)
+    return projectToSave
+  }
 
   const save = async () => {
     try {
-      const saved = await persistProject();
-      toast("Changes saved and static page published");
-      if (isNew) router.push(`/admin/projects/${saved.id}`);
+      const saved = await persistProject()
+      toast("Changes saved and static page published")
+      if (isNew) router.push(`/admin/projects/${saved.id}`)
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Unable to save and publish project");
+      toast(
+        error instanceof Error
+          ? error.message
+          : "Unable to save and publish project",
+      )
     }
-  };
+  }
 
   const preview = async () => {
     try {
-      const saved = await persistProject();
-      window.open(`/${saved.slug}`, "_blank");
+      const saved = await persistProject()
+      window.open(`/${saved.slug}`, "_blank")
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Unable to publish preview");
+      toast(
+        error instanceof Error ? error.message : "Unable to publish preview",
+      )
     }
-  };
+  }
 
   const exportHtml = async () => {
     try {
-      await downloadProjectHtml(draft);
-      toast("Static website package exported");
+      await downloadProjectHtml(draft)
+      toast("Static website package exported")
     } catch {
-      toast("Unable to export website package");
+      toast("Unable to export website package")
     }
-  };
+  }
+
+  const copyLink = async () => {
+    try {
+      const saved = await persistProject()
+      await copyToClipboard(`${window.location.origin}/${saved.slug}`)
+      toast("Public link copied")
+    } catch (error) {
+      toast(
+        error instanceof Error ? error.message : "Unable to copy public link",
+      )
+    }
+  }
 
   return (
     <div className="px-5 py-6 sm:px-8 sm:py-8">
-      {/* Breadcrumb + header */}
+      {}
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center gap-1.5 text-sm text-ink-faint">
           <Link href="/admin/projects" className="hover:text-ink">
@@ -156,6 +208,10 @@ export default function ProjectEditor() {
               <FileDown className="size-4" />
               Export Website
             </Button>
+            <Button variant="secondary" onClick={copyLink} disabled={!canSave}>
+              <Link2 className="size-4" />
+              Copy Link
+            </Button>
             <Button variant="secondary" onClick={preview} disabled={!canSave}>
               <Eye className="size-4" />
               Preview
@@ -167,7 +223,7 @@ export default function ProjectEditor() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {}
         <div className="mt-6 flex gap-1 border-b border-line">
           {tabs.map((t) => (
             <button
@@ -185,27 +241,33 @@ export default function ProjectEditor() {
           ))}
         </div>
 
-        {/* Split layout */}
+        {}
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
           <div>
             {tab === "general" && (
               <GeneralTab draft={draft} patch={patch} slugTaken={slugTaken} />
             )}
-            {tab === "appearance" && <AppearanceTab draft={draft} patch={patch} />}
-            {tab === "buttons" && <DownloadButtonsTab draft={draft} patch={patch} />}
+            {tab === "appearance" && (
+              <AppearanceTab draft={draft} patch={patch} />
+            )}
+            {tab === "buttons" && (
+              <DownloadButtonsTab draft={draft} patch={patch} />
+            )}
             {tab === "members" && <MembersTab draft={draft} patch={patch} />}
           </div>
 
-          {/* Live preview */}
+          {}
           <div className="lg:sticky lg:top-6 lg:self-start">
             <div className="mb-3 flex items-center gap-2">
               <Smartphone className="size-4 text-ink-faint" />
-              <span className="font-display text-sm font-bold text-ink">Live Preview</span>
+              <span className="font-display text-sm font-bold text-ink">
+                Live Preview
+              </span>
             </div>
             <PhonePreview project={draft} />
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

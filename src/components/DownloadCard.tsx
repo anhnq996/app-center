@@ -181,7 +181,7 @@ export function DownloadCard({
       {/* App logo + name */}
       <div className="flex flex-col items-center text-center">
         <div
-          className="grid place-items-center"
+          className="mb-5 grid max-w-full shrink-0 place-items-center overflow-hidden"
           style={{
             width: project.projectLogoWidth ?? 152,
             height: project.projectLogoHeight ?? 96,
@@ -192,7 +192,7 @@ export function DownloadCard({
             <img
               src={project.projectLogo}
               alt={project.name}
-              className="max-h-full max-w-full object-contain"
+              className="block size-full object-contain"
             />
           ) : (
             <div className="grid size-full place-items-center bg-gradient-to-br from-indigo-500 to-violet-700">
@@ -203,7 +203,7 @@ export function DownloadCard({
           )}
         </div>
         <h1
-          className={`font-display mt-5 text-[26px] font-extrabold leading-tight tracking-tight ${strong}`}
+          className={`font-display max-w-full break-words text-[26px] font-extrabold leading-tight tracking-tight ${strong}`}
         >
           {project.name || "Your App"}
         </h1>

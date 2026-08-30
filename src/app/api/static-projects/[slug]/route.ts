@@ -3,6 +3,8 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
 import { NextResponse } from "next/server";
+import { buildProjectArchive } from "../../../../lib/exportProjectHtml";
+import type { Project } from "../../../../lib/types";
 
 export const runtime = "nodejs";
 
@@ -87,12 +89,34 @@ async function slugBelongsToAnotherProject(
   });
 }
 
-function safeStaticPath(publicRoot: string, slug: string) {
-  const resolved = path.resolve(publicRoot, slug);
-  if (!resolved.startsWith(`${path.resolve(publicRoot)}${path.sep}`)) {
+function safeStaticPath(staticRoot: string, slug: string) {
+  const resolved = path.resolve(staticRoot, slug);
+  if (!resolved.startsWith(`${path.resolve(staticRoot)}${path.sep}`)) {
     throw new Error("Invalid static project path");
   }
   return resolved;
+}
+
+function requestOrigin(request: Request) {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProtocol = request.headers.get("x-forwarded-proto");
+  if (forwardedHost && forwardedProtocol) {
+    return `${forwardedProtocol.split(",")[0]}://${forwardedHost.split(",")[0]}`;
+  }
+  return new URL(request.url).origin;
+}
+
+async function archiveFromRequest(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    const project = (await request.json()) as Project;
+    const { archive } = await buildProjectArchive(project, {
+      assetBaseUrl: requestOrigin(request),
+      requireAssetDownloads: true,
+    });
+    return JSZip.loadAsync(await archive.arrayBuffer());
+  }
+  return JSZip.loadAsync(await request.arrayBuffer());
 }
 
 export async function POST(
@@ -118,15 +142,16 @@ export async function POST(
       return NextResponse.json({ error: "This slug is already used by another project" }, { status: 409 });
     }
 
-    const archive = await JSZip.loadAsync(await request.arrayBuffer());
+    const archive = await archiveFromRequest(request);
     const files = Object.values(archive.files).filter((entry) => !entry.dir);
     if (files.length === 0) throw new Error("The generated website archive is empty");
     const rootName = files[0].name.split("/")[0];
     const allowedPath = /^(index\.html|css\/style\.css|js\/app\.js|assets\/[a-z0-9._-]+)$/i;
 
     const publicRoot = path.resolve(process.cwd(), "public");
-    const target = safeStaticPath(publicRoot, slug);
-    const temporary = safeStaticPath(publicRoot, `.static-tmp-${slug}-${randomUUID()}`);
+    const staticRoot = path.resolve(publicRoot, "app");
+    const target = safeStaticPath(staticRoot, slug);
+    const temporary = safeStaticPath(staticRoot, `.static-tmp-${slug}-${randomUUID()}`);
     await mkdir(temporary, { recursive: true });
 
     try {
@@ -144,9 +169,9 @@ export async function POST(
       const indexPath = path.join(temporary, "index.html");
       const version = Date.now();
       const index = (await readFile(indexPath, "utf8"))
-        .replace(/href="css\//g, `href="/${slug}/css/`)
-        .replace(/src="js\//g, `src="/${slug}/js/`)
-        .replace(/src="assets\//g, `src="/${slug}/assets/`)
+        .replace(/href="css\//g, `href="/app/${slug}/css/`)
+        .replace(/src="js\//g, `src="/app/${slug}/js/`)
+        .replace(/src="assets\//g, `src="/app/${slug}/assets/`)
         .replace(/(\/(?:css|js|assets)\/[^"']+)/g, `$1?v=${version}`);
       await writeFile(indexPath, index, "utf8");
 
@@ -159,7 +184,7 @@ export async function POST(
 
     const previousSlug = request.headers.get("x-previous-slug")?.trim();
     if (previousSlug && previousSlug !== slug && validSlug(previousSlug)) {
-      await rm(safeStaticPath(publicRoot, previousSlug), { recursive: true, force: true });
+      await rm(safeStaticPath(staticRoot, previousSlug), { recursive: true, force: true });
     }
 
     return NextResponse.json({ url: `/${slug}` });
@@ -186,7 +211,8 @@ export async function DELETE(
     }
     await verifyWorkspaceManager(authorization.slice(7));
     const publicRoot = path.resolve(process.cwd(), "public");
-    await rm(safeStaticPath(publicRoot, slug), { recursive: true, force: true });
+    const staticRoot = path.resolve(publicRoot, "app");
+    await rm(safeStaticPath(staticRoot, slug), { recursive: true, force: true });
     const downloadRoot = path.resolve(publicRoot, "download");
     const downloadTarget = path.resolve(downloadRoot, slug);
     if (downloadTarget.startsWith(`${downloadRoot}${path.sep}`)) {

@@ -78,21 +78,64 @@ function extensionFor(type: string) {
   return extensions[type.split(";")[0].toLowerCase()] ?? "bin";
 }
 
-async function addAsset(zip: JSZip, source: string | null, name: string) {
+function assetUrl(source: string, baseUrl?: string) {
+  if (source.startsWith("/") && baseUrl) return new URL(source, baseUrl).toString();
+  return source;
+}
+
+function absolutePublicUrl(source: string, baseUrl?: string) {
+  if (source.startsWith("/") && baseUrl) return new URL(source, baseUrl).toString();
+  return source;
+}
+
+function exportPlatformHref(platform: Platform, baseUrl?: string) {
+  const href = platformHref(platform);
+  if (!href || !baseUrl) return href;
+  if (!href.startsWith("itms-services:")) return absolutePublicUrl(href, baseUrl);
+
+  try {
+    const url = new URL(href);
+    const manifestUrl = url.searchParams.get("url");
+    if (manifestUrl) {
+      url.searchParams.set("url", absolutePublicUrl(manifestUrl, baseUrl));
+    }
+    return url.toString();
+  } catch {
+    return href.replace(
+      /(url=)([^&]+)/,
+      (_match, prefix: string, encodedManifestUrl: string) =>
+        `${prefix}${encodeURIComponent(
+          absolutePublicUrl(decodeURIComponent(encodedManifestUrl), baseUrl),
+        )}`,
+    );
+  }
+}
+
+async function addAsset(
+  zip: JSZip,
+  source: string | null,
+  name: string,
+  options: { baseUrl?: string; requireDownload?: boolean } = {},
+) {
   if (!source) return null;
   try {
-    const response = await fetch(source);
+    const response = await fetch(assetUrl(source, options.baseUrl));
     if (!response.ok) throw new Error("Asset request failed");
     const blob = await response.blob();
     const path = `assets/${safeFileName(name, "asset")}.${extensionFor(blob.type)}`;
     zip.file(path, await blob.arrayBuffer());
     return path;
-  } catch {
+  } catch (error) {
+    if (options.requireDownload) {
+      throw new Error(
+        `Unable to download ${name}: ${error instanceof Error ? error.message : "asset request failed"}`,
+      );
+    }
     return safeUrl(source);
   }
 }
 
-function platformMarkup(platform: Platform, icon: string | null) {
+function platformMarkup(platform: Platform, icon: string | null, linkBaseUrl?: string) {
   const subtitleIsVersion = [
     `version ${platform.version}`,
     `phiên bản ${platform.version}`,
@@ -101,7 +144,7 @@ function platformMarkup(platform: Platform, icon: string | null) {
     platform.label.replace(new RegExp(`\\s*${platform.name}$`, "i"), "").trim() ||
     "Tải xuống cho";
   const label = rawLabel.toLowerCase() === "download for" ? "Tải xuống cho" : rawLabel;
-  const href = platformHref(platform);
+  const href = exportPlatformHref(platform, linkBaseUrl);
   const download = shouldDownloadFile(platform);
   return `
     <a class="download-button" data-platform="${escapeHtml(platform.kind)}" href="${safeUrl(href)}"${href ? ' target="_blank" rel="noreferrer"' : ' data-empty-link="true"'}${download ? ` download="${escapeHtml(platform.fileName || "")}"` : ""}>
@@ -121,22 +164,43 @@ function platformMarkup(platform: Platform, icon: string | null) {
     </a>`;
 }
 
-export async function buildProjectArchive(project: Project) {
+export async function buildProjectArchive(
+  project: Project,
+  options: { assetBaseUrl?: string; requireAssetDownloads?: boolean } = {},
+) {
   const zip = new JSZip();
   const folderName = safeFileName(project.name, project.slug || "project");
   const root = zip.folder(folderName);
   if (!root) throw new Error("Unable to create export folder");
 
   const [googleIcon, appleIcon, projectLogo, companyLogo, backgroundImage] = await Promise.all([
-    addAsset(root, "/assets/platforms/google-play.svg", "google-play"),
-    addAsset(root, "/assets/platforms/app-store.svg", "app-store"),
-    addAsset(root, project.projectLogo, "project-logo"),
-    addAsset(root, project.companyLogo, "company-logo"),
-    addAsset(root, project.appearance.backgroundImage, "background"),
+    addAsset(root, "/assets/platforms/google-play.svg", "google-play", {
+      baseUrl: options.assetBaseUrl,
+      requireDownload: options.requireAssetDownloads,
+    }),
+    addAsset(root, "/assets/platforms/app-store.svg", "app-store", {
+      baseUrl: options.assetBaseUrl,
+      requireDownload: options.requireAssetDownloads,
+    }),
+    addAsset(root, project.projectLogo, "project-logo", {
+      baseUrl: options.assetBaseUrl,
+      requireDownload: options.requireAssetDownloads,
+    }),
+    addAsset(root, project.companyLogo, "company-logo", {
+      baseUrl: options.assetBaseUrl,
+      requireDownload: options.requireAssetDownloads,
+    }),
+    addAsset(root, project.appearance.backgroundImage, "background", {
+      baseUrl: options.assetBaseUrl,
+      requireDownload: options.requireAssetDownloads,
+    }),
   ]);
   const customIcons = await Promise.all(
     project.platforms.map((platform, index) =>
-      addAsset(root, platform.logo, `platform-${index + 1}`),
+      addAsset(root, platform.logo, `platform-${index + 1}`, {
+        baseUrl: options.assetBaseUrl,
+        requireDownload: options.requireAssetDownloads,
+      }),
     ),
   );
 
@@ -182,6 +246,7 @@ export async function buildProjectArchive(project: Project) {
         platform,
         customIcons[index] ??
           (platform.kind === "android" ? googleIcon : platform.kind === "ios" ? appleIcon : null),
+        options.assetBaseUrl,
       ),
     )
     .join("");
@@ -193,7 +258,7 @@ body{min-height:100vh;background:${pageBackground};color:${strong}}
 .glow.one{width:24rem;height:24rem;left:-6rem;top:-6rem;right:auto;bottom:auto;border-radius:50%;background:${light ? "rgba(129,140,248,.28)" : "rgba(79,70,229,.18)"};filter:blur(64px)}.glow.two{width:28rem;height:28rem;left:auto;top:auto;right:-5rem;bottom:-8rem;border-radius:50%;background:${light ? "rgba(56,189,248,.18)" : "rgba(14,165,233,.14)"};filter:blur(64px)}
 main{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:48px 16px}.card{width:100%;max-width:440px;padding:32px;border:1px solid ${cardBorder};border-radius:${radii[appearance.cardRadius]}px;background:${cardBackground};${appearance.cardStyle === "glass" ? "backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);" : ""}${appearance.cardStyle !== "transparent" ? "box-shadow:0 30px 80px -30px rgba(0,0,0,.6);" : ""}}
 .company{margin-bottom:24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}.company-logo{display:flex;align-items:center;justify-content:center;overflow:hidden;max-width:100%;width:${project.companyLogoWidth ?? 112}px;height:${project.companyLogoHeight ?? 28}px}.company-logo img,.project-logo img{display:block;max-width:100%;max-height:100%;object-fit:contain}.company-name{color:${muted};font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-.project{text-align:center;display:flex;flex-direction:column;align-items:center}.project-logo{display:grid;place-items:center;width:${project.projectLogoWidth ?? 152}px;height:${project.projectLogoHeight ?? 96}px;max-width:100%}.fallback-logo{width:100%;height:100%;display:grid;place-items:center;border-radius:24px;background:linear-gradient(135deg,#6366f1,#6d28d9);font-size:26px;font-weight:800;color:#fff}.project h1{margin:20px 0 0;font-size:26px;line-height:1.15;letter-spacing:-.025em}.project p{margin:6px 0 0;color:${muted};font-size:14px}
+.project{text-align:center;display:flex;flex-direction:column;align-items:center}.project-logo{display:grid;place-items:center;overflow:hidden;flex-shrink:0;margin-bottom:20px;width:${project.projectLogoWidth ?? 152}px;height:${project.projectLogoHeight ?? 96}px;max-width:100%}.project-logo img{width:100%;height:100%;object-fit:contain}.fallback-logo{width:100%;height:100%;display:grid;place-items:center;border-radius:24px;background:linear-gradient(135deg,#6366f1,#6d28d9);font-size:26px;font-weight:800;color:#fff}.project h1{margin:0;font-size:26px;line-height:1.15;letter-spacing:-.025em;max-width:100%;overflow-wrap:anywhere}.project p{margin:6px 0 0;color:${muted};font-size:14px}
 .buttons{display:flex;flex-direction:column;gap:10px;margin-top:28px}.download-button{position:relative;min-height:68px;display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid ${buttonBorder};border-radius:18px;background:${buttonBackground};color:${strong};text-decoration:none;transition:.2s ease}.download-button:hover{transform:translateY(-2px);background:${buttonHover};box-shadow:0 16px 40px -16px rgba(15,23,41,.35)}.platform-icon{width:44px;height:44px;flex:0 0 auto;display:grid;place-items:center;border-radius:${iconRadius};background:${iconBackground}}.platform-icon img{width:25px;height:25px;object-fit:contain}.generic-icon{font-size:23px;color:${showIconBackground ? (light ? "#0f1729" : "#fff") : strong}}.button-copy{min-width:0;display:flex;flex-direction:column;text-align:left}.button-label{color:${muted};font-size:11px;font-weight:600;letter-spacing:.03em}.button-copy strong{font-size:15px;line-height:1.2}.button-version,.button-subtitle{color:${muted};font-size:11px;line-height:1.35}.button-subtitle{white-space:normal}.recommended{position:absolute;right:10px;top:8px;border-radius:999px;padding:3px 8px;background:${light ? "#fff" : "#4f46e5"};color:${light ? "#0f1729" : "#fff"};font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.download-icon{width:17px;height:17px;flex:0 0 auto;margin-left:auto;opacity:.48;transition:.2s ease}.download-button:hover .download-icon{transform:translateY(2px);opacity:.85}.empty,.security{text-align:center;color:${muted};font-size:11px}.empty{padding:16px 0;font-size:14px}.security{margin:24px 0 0}
 @media(max-width:480px){main{padding:28px 12px}.card{padding:22px}.project h1{font-size:24px}.recommended{display:none}}
 `.trim();
@@ -246,7 +311,9 @@ if(platform){
 }
 
 export async function downloadProjectHtml(project: Project) {
-  const { archive, folderName } = await buildProjectArchive(project);
+  const { archive, folderName } = await buildProjectArchive(project, {
+    assetBaseUrl: window.location.origin,
+  });
   const url = URL.createObjectURL(archive);
   const anchor = document.createElement("a");
   anchor.href = url;
