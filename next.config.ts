@@ -1,19 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async headers() {
     return [
       {
-        source: "/:slug/:folder(css|js|assets)/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
-      {
-        source: "/download/:slug/:path*",
+        source: "/app/:slug/:folder(css|js|assets|download)/:path*",
         headers: [
           {
             key: "Cache-Control",

@@ -54,9 +54,9 @@ function safeName(name: string) {
 }
 
 function safeDownloadDirectory(slug: string) {
-  const downloadRoot = path.resolve(process.cwd(), "public", "download")
-  const directory = path.resolve(downloadRoot, slug)
-  if (!directory.startsWith(`${downloadRoot}${path.sep}`))
+  const appRoot = path.resolve(process.cwd(), "public", "app")
+  const directory = path.resolve(appRoot, slug, "download")
+  if (!directory.startsWith(`${path.resolve(appRoot, slug)}${path.sep}`))
     throw new Error("Invalid upload path")
   return directory
 }
@@ -201,7 +201,7 @@ export async function POST(
         Buffer.from(await file.arrayBuffer()),
       )
       return NextResponse.json({
-        url: `/download/${slug}/${storedName}`,
+        url: `/app/${slug}/download/${storedName}`,
         fileName: file.name,
         fileSize: formatFileSize(file.size),
       })
@@ -221,8 +221,8 @@ export async function POST(
         forwardedHost && forwardedProtocol
           ? `${forwardedProtocol.split(",")[0]}://${forwardedHost.split(",")[0]}`
           : new URL(request.url).origin
-      const ipaUrl = `${origin}/download/${slug}/${ipaStoredName}`
-      const manifestUrl = `${origin}/download/${slug}/${plistStoredName}`
+      const ipaUrl = `${origin}/app/${slug}/download/${ipaStoredName}`
+      const manifestUrl = `${origin}/app/${slug}/download/${plistStoredName}`
       const metadata = await readIpaMetadata(ipaBuffer)
       if (!metadata.bundleIdentifier) {
         throw new Error("Unable to read the IPA bundle identifier")
@@ -243,7 +243,7 @@ export async function POST(
         ipaUrl,
         fileName: ipa.name,
         fileSize: formatFileSize(ipa.size),
-        manifestFileName: "manifest.plist",
+        manifestFileName: plistStoredName,
       })
     }
 

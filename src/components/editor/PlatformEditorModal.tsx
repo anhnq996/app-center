@@ -353,6 +353,28 @@ export function PlatformEditorModal({
                 )}
                 Upload IPA
               </Button>
+              {draft.url && (
+                <div className="flex items-center gap-3 rounded-xl border border-line bg-bg px-3.5 py-3">
+                  <FileCheck2 className="size-5 shrink-0 text-success" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-ink">
+                      {draft.manifestFileName || "manifest.plist"}
+                    </p>
+                    <p className="truncate text-xs text-ink-faint">
+                      {draft.url}
+                    </p>
+                  </div>
+                  <a
+                    href={draft.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-soft transition hover:bg-line hover:text-brand"
+                    aria-label="Open plist"
+                  >
+                    <LinkIcon className="size-4" />
+                  </a>
+                </div>
+              )}
               <p className="text-xs leading-relaxed text-ink-faint">
                 The generated plist will reference the uploaded IPA and use
                 metadata from the app bundle.

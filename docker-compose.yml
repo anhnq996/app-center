@@ -1,0 +1,20 @@
+services:
+  app-center:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: app-center:latest
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - app_static:/app/public/app
+
+volumes:
+  app_static:

@@ -172,9 +172,23 @@ export async function POST(
         .replace(/href="css\//g, `href="/app/${slug}/css/`)
         .replace(/src="js\//g, `src="/app/${slug}/js/`)
         .replace(/src="assets\//g, `src="/app/${slug}/assets/`)
-        .replace(/(\/(?:css|js|assets)\/[^"']+)/g, `$1?v=${version}`);
+        .replace(new RegExp(`(/app/${slug}/(?:css|js|assets)/[^"']+)`, "g"), `$1?v=${version}`);
       await writeFile(indexPath, index, "utf8");
 
+      const existingDownload = path.join(target, "download");
+      const legacyDownload = path.join(target, "project", "download");
+      const preservedDownload = path.join(temporary, "download");
+      try {
+        await mkdir(path.dirname(preservedDownload), { recursive: true });
+        await rename(existingDownload, preservedDownload);
+      } catch {
+        try {
+          await mkdir(path.dirname(preservedDownload), { recursive: true });
+          await rename(legacyDownload, preservedDownload);
+        } catch {
+          // No uploaded files to preserve yet.
+        }
+      }
       await rm(target, { recursive: true, force: true });
       await rename(temporary, target);
     } catch (error) {
@@ -213,11 +227,6 @@ export async function DELETE(
     const publicRoot = path.resolve(process.cwd(), "public");
     const staticRoot = path.resolve(publicRoot, "app");
     await rm(safeStaticPath(staticRoot, slug), { recursive: true, force: true });
-    const downloadRoot = path.resolve(publicRoot, "download");
-    const downloadTarget = path.resolve(downloadRoot, slug);
-    if (downloadTarget.startsWith(`${downloadRoot}${path.sep}`)) {
-      await rm(downloadTarget, { recursive: true, force: true });
-    }
     return NextResponse.json({ deleted: true });
   } catch (error) {
     return NextResponse.json(
