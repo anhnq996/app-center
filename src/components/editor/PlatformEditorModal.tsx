@@ -155,39 +155,43 @@ export function PlatformEditorModal({
     }
   }
 
-  const uploadIosPackage = async () => {
-    if (!ipaFile) return
+  const uploadIosPackage = async (platformDraft: Platform): Promise<Platform> => {
+    if (!ipaFile) return platformDraft
     if (!ipaFile.name.toLowerCase().endsWith(".ipa")) {
-      toast("Select a valid .ipa file")
-      return
+      throw new Error("Select a valid .ipa file")
     }
+    const formData = new FormData()
+    formData.set("mode", "ios")
+    formData.set("ipa", ipaFile)
+    formData.set("name", platformDraft.name)
+    formData.set("version", platformDraft.version)
+    const result = await uploadRequest(formData)
+    return {
+      ...platformDraft,
+      url: result.url ?? "",
+      ipaUrl: result.ipaUrl ?? null,
+      linkBehavior: "ios-manifest" as const,
+      iosOta: true,
+      fileName: result.fileName ?? ipaFile.name,
+      fileSize: result.fileSize ?? formatFileSize(ipaFile.size),
+      manifestFileName: result.manifestFileName ?? "manifest.plist",
+    }
+  }
+
+  const handleSave = async () => {
+    if (!draft || uploading) return
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.set("mode", "ios")
-      formData.set("ipa", ipaFile)
-      formData.set("name", draft.name)
-      formData.set("version", draft.version)
-      const result = await uploadRequest(formData)
-      setDraft((current) =>
-        current
-          ? {
-              ...current,
-              url: result.url ?? "",
-              ipaUrl: result.ipaUrl ?? null,
-              linkBehavior: "ios-manifest",
-              iosOta: true,
-              fileName: result.fileName ?? ipaFile.name,
-              fileSize: result.fileSize ?? formatFileSize(ipaFile.size),
-              manifestFileName: result.manifestFileName ?? "manifest.plist",
-            }
-          : current,
-      )
-      toast("IPA uploaded and plist generated")
+      const shouldUploadIpa = draft.source === "file" && iosOtaEnabled && ipaFile
+      const platformToSave =
+        shouldUploadIpa
+          ? await uploadIosPackage(draft)
+          : draft
+      setDraft(platformToSave)
+      onSave(platformToSave)
+      if (shouldUploadIpa) toast("IPA uploaded and plist generated")
     } catch (error) {
-      toast(
-        error instanceof Error ? error.message : "Unable to upload iOS package",
-      )
+      toast(error instanceof Error ? error.message : "Unable to save platform")
     } finally {
       setUploading(false)
     }
@@ -341,18 +345,6 @@ export function PlatformEditorModal({
                   />
                 </label>
               </Field>
-              <Button
-                variant="secondary"
-                onClick={uploadIosPackage}
-                disabled={!ipaFile || uploading}
-              >
-                {uploading ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <FileUp className="size-4" />
-                )}
-                Upload IPA
-              </Button>
               {draft.url && (
                 <div className="flex items-center gap-3 rounded-xl border border-line bg-bg px-3.5 py-3">
                   <FileCheck2 className="size-5 shrink-0 text-success" />
@@ -376,8 +368,8 @@ export function PlatformEditorModal({
                 </div>
               )}
               <p className="text-xs leading-relaxed text-ink-faint">
-                The generated plist will reference the uploaded IPA and use
-                metadata from the app bundle.
+                Save will upload the IPA, generate the plist, and use the plist
+                link for this button.
               </p>
             </div>
           ) : (
@@ -555,10 +547,19 @@ export function PlatformEditorModal({
           Cancel
         </Button>
         <Button
-          onClick={() => onSave(draft)}
-          disabled={!draft.name.trim() || !draft.url.trim() || uploading}
+          onClick={handleSave}
+          disabled={
+            !draft.name.trim() ||
+            uploading ||
+            (draft.source === "file" && iosOtaEnabled
+              ? !draft.url.trim() && !ipaFile
+              : !draft.url.trim())
+          }
         >
-          {mode === "add" ? "Add Platform" : "Save"}
+          {uploading ? (
+            <LoaderCircle className="size-4 animate-spin" />
+          ) : null}
+          {uploading ? "Saving..." : mode === "add" ? "Add Platform" : "Save"}
         </Button>
       </div>
     </Modal>
